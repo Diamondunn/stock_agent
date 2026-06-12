@@ -1,0 +1,21 @@
+{
+  "graphs": {
+    "stock_analysis": "gupiao:app"
+  },
+  "dependencies": [
+    "python-dotenv",
+    "pandas",
+    "numpy",
+    "akshare",
+    "yfinance",
+    "scipy",
+    "matplotlib",
+    "langchain",
+    "langchain-core",
+    "langchain-experimental",
+    "langgraph"
+  ],
+  "watch_dirs": ["."],
+  "port": 2024,
+  "env_file": ".env"
+}

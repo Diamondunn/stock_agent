@@ -1,0 +1,79 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+    background: #f4f6f9;
+    margin: 0;
+    padding: 20px;
+}
+
+h2, h3 {
+    margin-top: 20px;
+}
+
+.portfolio-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    margin-top: 10px;
+}
+
+.portfolio-table th {
+    background: #f0f2f5;
+    padding: 10px;
+    text-align: center;
+}
+
+.portfolio-table td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+}
+
+.portfolio-table tr:hover {
+    background: #fafafa;
+}
+
+.code {
+    font-size: 12px;
+    color: #888;
+}
+
+.profit {
+    color: red;
+    font-weight: bold;
+}
+
+.loss {
+    color: green;
+    font-weight: bold;
+}
+
+/* 聊天框 */
+#chat-box {
+    background: white;
+    padding: 15px;
+    height: 350px;
+    overflow-y: auto;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.user-msg {
+    text-align: right;
+    margin: 8px 0;
+    color: #333;
+}
+
+.ai-msg {
+    text-align: left;
+    margin: 8px 0;
+    color: #222;
+}
+
+#chat-input {
+    width: 80%;
+    padding: 8px;
+}
+
+button {
+    padding: 8px 12px;
+}

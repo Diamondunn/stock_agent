@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>股票AI交易终端</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --bg:#0b1220;
+  --panel:#111c35;
+  --border:#1f2f55;
+  --text:#e6edff;
+  --muted:#8fa7d9;
+  --red:#ff4d4f;
+  --green:#2ecc71;
+}
+
+body{
+  margin:0;
+  padding:20px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Consolas,monospace;
+}
+
+h2{margin-bottom:20px}
+
+.container{display:flex;gap:20px}
+.left{width:60%;display:flex;flex-direction:column;gap:20px}
+.right{width:40%;display:flex;flex-direction:column;gap:20px}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:15px;
+}
+
+.row{display:flex;gap:15px}
+
+.kpi{
+  flex:1;
+  background:#0f1a2f;
+  padding:12px;
+  border-radius:8px;
+}
+
+.kpi .label{color:var(--muted);font-size:12px}
+.kpi .value{font-size:20px;margin-top:5px}
+
+.profit{color:var(--red)}
+.loss{color:var(--green)}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+
+th,td{
+  padding:8px;
+  border-bottom:1px solid #1c2b4a;
+}
+
+th{color:var(--muted)}
+
+.num{text-align:right}
+
+.watch-table th,
+.watch-table td{
+  padding:8px;
+  text-align:center;
+  vertical-align:middle;
+}
+.watch-table th{
+  padding:8px;
+  text-align:left;
+  vertical-align:middle;
+}
+.watch-table th.num,
+.watch-table td.num{
+  text-align:center;
+}
+.watch-table th:last-child,
+.watch-table td:last-child{
+  text-align:center;
+}
+
+.watch-card-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.watch-card-title{
+  font-size:16px;
+  font-weight:600;
+}
+
+.watch-input{
+  display:flex;
+  gap:10px;
+  margin-bottom:10px;
+  align-items:center;
+}
+
+.watch-input input{
+  flex:1;
+  padding:8px 10px;
+  border-radius:8px;
+}
+
+.watch-input button{
+  padding:6px 12px;
+  border-radius:8px;
+}
+
+.watch-table{
+  background:#0f1a2f;
+  border:1px solid #1c2b4a;
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.watch-table thead{
+  background:#0b1428;
+}
+.watch-table thead th{
+  text-align:center !important;
+}
+
+.watch-table tbody tr:nth-child(odd){
+  background:rgba(255,255,255,0.02);
+}
+
+.watch-table tbody tr:hover{
+  background:rgba(46,204,113,0.06);
+}
+
+.watch-empty{
+  color:var(--muted);
+  font-size:12px;
+  padding:10px 0 6px;
+}
+
+.up{
+  color:var(--red);
+  font-weight:bold;
+  animation:flashUp 0.6s;
+}
+
+.down{
+  color:var(--green);
+  font-weight:bold;
+  animation:flashDown 0.6s;
+}
+
+@keyframes flashUp{
+  0%{background:#4a1f1f}
+  100%{background:transparent}
+}
+
+@keyframes flashDown{
+  0%{background:#103d2a}
+  100%{background:transparent}
+}
+
+.chat-box{
+  height:380px;
+  overflow-y:auto;
+  border:1px solid #1c2b4a;
+  padding:10px;
+  border-radius:8px;
+  background:#0f1a2f;
+}
+
+.chat-input{
+  display:flex;
+  gap:10px;
+  margin-top:10px;
+}
+
+input{
+  flex:1;
+  padding:8px;
+  background:#0b1428;
+  color:var(--text);
+  border:1px solid #1c2b4a;
+  border-radius:6px;
+}
+
+button{
+  padding:6px 10px;
+  background:#1e335d;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+button:hover{opacity:0.8}
+
+canvas{max-height:250px}
+.watch-input{display:flex;gap:10px;margin-bottom:10px}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- LEFT -->
+<div class="left">
+
+<!-- 浮动收益 -->
+<div class="card">
+<div class="row">
+  <div class="kpi">
+    <div class="label">总资产</div>
+    <div class="value">{{ metrics.total_value }}</div>
+  </div>
+  <div class="kpi">
+    <div class="label">总成本</div>
+    <div class="value">{{ metrics.total_cost }}</div>
+  </div>
+  <div class="kpi">
+    <div class="label">浮动收益</div>
+    <div class="value {% if metrics.total_pnl >= 0 %}profit{% else %}loss{% endif %}">
+      {{ metrics.total_pnl }} ({{ metrics.total_pnl_pct }}%)
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 已实现收益 -->
+<div class="card">
+<h3>账户历史收益</h3>
+
+<div class="row">
+  <div class="kpi">
+    <div class="label">已实现收益</div>
+    <div class="value {% if account.realized_pnl >= 0 %}profit{% else %}loss{% endif %}">
+      {{ account.realized_pnl }}
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="label">胜率</div>
+    <div class="value">{{ account.win_rate }}%</div>
+  </div>
+  <div class="kpi">
+    <div class="label">买入次数</div>
+    <div class="value">{{ account.buy_trades }}</div>
+  </div>
+  <div class="kpi">
+    <div class="label">卖出次数</div>
+    <div class="value">{{ account.sell_trades }}</div>
+  </div>
+</div>
+
+<canvas id="equityChart"></canvas>
+</div>
+
+<!-- 仓位分布 -->
+<div class="card">
+<h3>仓位分布</h3>
+<canvas id="pieChart"></canvas>
+</div>
+
+<!-- 持仓明细 -->
+<div class="card">
+<div class="row" style="justify-content:space-between;align-items:center">
+  <h3>持仓明细</h3>
+  <button onclick="rebuildHoldings()" style="padding:4px 8px;font-size:12px">重建持仓</button>
+</div>
+<table>
+<thead>
+<tr>
+<th>代码</th>
+<th>名称</th>
+<th class="num">股数</th>
+<th class="num">成本</th>
+<th class="num">现价</th>
+<th class="num">市值</th>
+<th class="num">盈亏</th>
+</tr>
+</thead>
+<tbody>
+{% for item in metrics.details %}
+<tr>
+<td>{{ item.code }}</td>
+<td>{{ item.name }}</td>
+<td class="num">{{ item.shares }}</td>
+<td class="num">{{ item.avg_cost }}</td>
+<td class="num">{{ item.latest_price }}</td>
+<td class="num">{{ item.market_value }}</td>
+<td class="num {% if item.pnl >= 0 %}profit{% else %}loss{% endif %}">
+{{ item.pnl }} ({{ item.pnl_pct }}%)
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+</div>
+
+<!-- RIGHT -->
+<div class="right">
+
+<!-- 关注列表 -->
+<div class="card">
+<div class="watch-card-header">
+  <div class="watch-card-title">关注列表</div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button onclick="refreshWatchlist(true)">刷新行情</button>
+    <div id="watchSource" style="color:#8fa7d9;font-size:12px"></div>
+  </div>
+</div>
+<div class="watch-empty" id="watchEmpty" style="display:none">暂无关注股票</div>
+
+<div class="watch-input">
+<input id="watchSymbol" placeholder="输入代码 600519 或 600519.SS">
+<button onclick="addWatch()">添加</button>
+</div>
+
+<table class="watch-table" id="watchTable">
+<colgroup>
+  <col style="width:18%">
+  <col style="width:34%">
+  <col style="width:20%">
+  <col style="width:18%">
+  <col style="width:10%">
+</colgroup>
+<thead>
+<tr>
+<th>代码</th>
+<th>名称</th>
+<th class="num">最新价</th>
+<th class="num">涨跌幅</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="watchBody"></tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<script>
+// 仓位饼图
+new Chart(document.getElementById("pieChart"), {
+  type:'pie',
+  data:{
+    labels: {{ metrics.allocation_labels | tojson }},
+    datasets:[{data: {{ metrics.allocation_values | tojson }} }]
+  }
+});
+
+// 收益曲线
+const equityData = {{ account.equity_curve | tojson }};
+if(equityData && equityData.length>0){
+new Chart(document.getElementById("equityChart"),{
+  type:'line',
+  data:{
+    labels: equityData.map(x=>x.time.substring(0,10)),
+    datasets:[{
+      label:'累计收益',
+      data: equityData.map(x=>x.equity),
+      tension:0.3
+    }]
+  }
+});
+}
+
+// ====== 实时关注行情 ======
+let lastPrices = {};
+
+async function refreshWatchlist(force=false){
+  const body = document.getElementById("watchBody");
+  body.innerHTML="";
+
+  let items = [];
+  let source = "";
+  try{
+    const res = await fetch(`/api/watchlist/quotes${force ? "?force=1" : ""}`);
+    const data = await res.json();
+    if(data && data.ok && Array.isArray(data.items)){
+      items = data.items;
+    }
+  }catch(e){
+    items = [];
+  }
+
+  // fallback: read watchlist symbols if quotes not available
+  if(items.length === 0){
+    try{
+      const res = await fetch("/api/watchlist");
+      const data = await res.json();
+      if(data && data.ok && Array.isArray(data.watchlist)){
+        source = data.source || "";
+        items = data.watchlist.map(w => ({
+          symbol: w.symbol,
+          name: w.name || "",
+          price: null,
+          change_pct: null,
+        }));
+      }
+    }catch(e){
+      items = [];
+    }
+  }
+
+  const emptyEl = document.getElementById("watchEmpty");
+  const tableEl = document.getElementById("watchTable");
+  if(items.length === 0){
+    if(emptyEl) emptyEl.style.display = "block";
+    if(tableEl) tableEl.style.display = "none";
+    return;
+  }
+  if(emptyEl) emptyEl.style.display = "none";
+  if(tableEl) tableEl.style.display = "table";
+
+  items.forEach(item=>{
+    let priceClass="";
+    if(item.price!==null && lastPrices[item.symbol]!==undefined){
+      if(item.price>lastPrices[item.symbol]) priceClass="up";
+      if(item.price<lastPrices[item.symbol]) priceClass="down";
+    }
+
+    lastPrices[item.symbol]=item.price;
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${item.symbol}</td>
+      <td>${item.name||""}</td>
+      <td class="num ${priceClass}">
+        ${item.price!==null?item.price:"--"}
+      </td>
+      <td class="num ${item.change_pct>0?'up':item.change_pct<0?'down':''}">
+        ${item.change_pct!==null?item.change_pct.toFixed(2)+'%':"--"}
+      </td>
+      <td><button onclick="removeWatch('${item.symbol}')">删除</button></td>
+    `;
+    body.appendChild(tr);
+  });
+
+  if(source){
+    const sourceText = source === "env" ? "来源：STOCK_LIST" : "来源：数据库";
+    const el = document.getElementById("watchSource");
+    if(el) el.textContent = sourceText;
+  }
+}
+
+function isCnTradingTime(now = new Date()){
+  const day = now.getDay(); // 0 Sun - 6 Sat
+  if(day === 0 || day === 6) return false;
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const mins = h * 60 + m;
+  // 9:30-11:30, 13:00-15:00
+  return (mins >= 570 && mins <= 690) || (mins >= 780 && mins <= 900);
+}
+
+async function refreshWatchlistGuarded(){
+  if(document.visibilityState !== "visible") return;
+  if(!isCnTradingTime()) return;
+  await refreshWatchlist();
+}
+
+const isTradingNow = isCnTradingTime();
+const forceOnce = !isTradingNow;
+refreshWatchlist(forceOnce);
+if(isTradingNow){
+  setInterval(refreshWatchlistGuarded,60000);
+}
+
+
+async function addWatch(){
+  const symbol=document.getElementById("watchSymbol").value.trim();
+  if(!symbol)return;
+  await fetch("/api/watchlist/add",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({symbol})
+  });
+  refreshWatchlist();
+}
+
+async function removeWatch(symbol){
+  await fetch("/api/watchlist/remove",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({symbol})
+  });
+  refreshWatchlist();
+}
+
+async function rebuildHoldings(){
+  try{
+    const res = await fetch("/api/holdings/rebuild",{method:"POST"});
+    const data = await res.json();
+    if(!data.ok){
+      alert("重建失败: " + (data.error||""));
+      return;
+    }
+    location.reload();
+  }catch(e){
+    alert("重建失败");
+  }
+}
+
+</script>
+
+</body>
+</html>
