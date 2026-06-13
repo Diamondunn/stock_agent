@@ -433,17 +433,23 @@ async function refreshWatchlist(force=false){
     lastPrices[item.symbol]=item.price;
 
     const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td>${item.symbol}</td>
-      <td>${item.name||""}</td>
-      <td class="num ${priceClass}">
-        ${item.price!==null?item.price:"--"}
-      </td>
-      <td class="num ${item.change_pct>0?'up':item.change_pct<0?'down':''}">
-        ${item.change_pct!==null?item.change_pct.toFixed(2)+'%':"--"}
-      </td>
-      <td><button onclick="removeWatch('${item.symbol}')">删除</button></td>
-    `;
+    const symbolTd=document.createElement("td");
+    symbolTd.textContent=item.symbol || "";
+    const nameTd=document.createElement("td");
+    nameTd.textContent=item.name || "";
+    const priceTd=document.createElement("td");
+    priceTd.className=`num ${priceClass}`.trim();
+    priceTd.textContent=item.price!==null?item.price:"--";
+    const changeTd=document.createElement("td");
+    changeTd.className=`num ${item.change_pct>0?'up':item.change_pct<0?'down':''}`.trim();
+    changeTd.textContent=item.change_pct!==null?Number(item.change_pct).toFixed(2)+'%':"--";
+    const actionTd=document.createElement("td");
+    const removeBtn=document.createElement("button");
+    removeBtn.type="button";
+    removeBtn.textContent="删除";
+    removeBtn.addEventListener("click",()=>removeWatch(item.symbol));
+    actionTd.appendChild(removeBtn);
+    tr.append(symbolTd,nameTd,priceTd,changeTd,actionTd);
     body.appendChild(tr);
   });
 

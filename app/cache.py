@@ -88,6 +88,8 @@ cache = DataCache()
 # ===============================
 def is_cn_trading_time(now: Optional[datetime] = None) -> bool:
     now = now or datetime.now()
+    if now.weekday() >= 5:
+        return False
     t = now.time()
     morning = dtime(9, 30) <= t <= dtime(11, 30)
     afternoon = dtime(13, 0) <= t <= dtime(15, 0)

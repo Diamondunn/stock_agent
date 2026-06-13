@@ -28,3 +28,9 @@ dist/
 build/
 
 *.log
+
+upload_ready_public/
+upload_easy_public/
+upload_easy_public.zip
+stock_agent_deploy_key
+stock_agent_deploy_key.pub

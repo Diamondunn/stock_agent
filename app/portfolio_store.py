@@ -422,10 +422,9 @@ def remove_watch(symbol: str):
 
 
 def list_watchlist() -> List[Dict[str, Any]]:
-    # Prefer STOCK_LIST when provided
-    env_watchlist = _watchlist_from_env()
-    if env_watchlist:
-        return env_watchlist
     with _conn() as con:
         rows = con.execute("SELECT * FROM watchlist ORDER BY created_at DESC").fetchall()
-        return [dict(r) for r in rows]
+        items = [dict(r) for r in rows]
+    if items:
+        return items
+    return _watchlist_from_env()

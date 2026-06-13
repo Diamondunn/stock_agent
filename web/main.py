@@ -46,7 +46,7 @@ from app.dsa_bridge import get_dsa_app
 # App Init (DSA as main frontend)
 # ===============================
 app = get_dsa_app()
-bot = StockChatBot()
+bot: StockChatBot | None = None
 router = APIRouter(prefix="/api")
 templates = Jinja2Templates(directory="web/templates")
 _alert_thread_started = False
@@ -64,6 +64,13 @@ try:
         load_dotenv(root_env, override=False)
 except Exception:
     pass
+
+
+def get_bot() -> StockChatBot:
+    global bot
+    if bot is None:
+        bot = StockChatBot()
+    return bot
 
 
 # ===============================
@@ -237,7 +244,8 @@ def _get_watchlist_symbols() -> list[str]:
 
 def _get_watchlist_source() -> str:
     env_list = _parse_stock_list_env()
-    if env_list:
+    wl = list_watchlist() or []
+    if env_list and not wl:
         return "env"
     return "db"
 
@@ -511,7 +519,7 @@ async def api_watchlist_remove(data: dict):
 async def chat(data: dict):
     try:
         message = (data or {}).get("message", "") or ""
-        reply = bot.ask(message)
+        reply = get_bot().ask(message)
         return JSONResponse({"ok": True, "reply": reply})
 
     except Exception as e:

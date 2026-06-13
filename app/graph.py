@@ -8,8 +8,6 @@ from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 
-from langchain_core.messages import SystemMessage
-
 from .config import config
 from .tools import toolbox
 from .prompts import ASSISTANT_SYSTEM_PROMPT

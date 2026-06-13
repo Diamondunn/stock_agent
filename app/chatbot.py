@@ -1,4 +1,5 @@
 import re
+import time
 
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage
@@ -24,6 +25,11 @@ class StockChatBot:
         )
         reply = result["messages"][-1].content
         return _append_holding_hint(message, reply)
+
+    def chat_with_timing(self, message: str) -> tuple[str, float]:
+        start = time.perf_counter()
+        reply = self.ask(message)
+        return reply, time.perf_counter() - start
 
 
 def _extract_codes(text: str) -> set[str]:
