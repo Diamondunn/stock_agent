@@ -43,7 +43,13 @@ portfolio.db                 Legacy local database
 
 ## Quick Start
 
-Create a virtual environment and install dependencies:
+Use the bootstrap script for a first local setup:
+
+```bash
+bash scripts/bootstrap.sh
+```
+
+Or run the steps manually:
 
 ```bash
 python3 -m venv .venv
@@ -64,6 +70,9 @@ DEEPSEEK_API_KEY=your_deepseek_key
 STOCK_LIST=600519,000001
 DATABASE_PATH=./data/stock_analysis.db
 ```
+
+The portfolio dashboard can start without `DEEPSEEK_API_KEY`. The chat endpoint
+will return a setup message until the key is configured.
 
 ## Run
 
@@ -136,6 +145,9 @@ Useful local checks:
 python -m compileall -q app web scripts tests
 python -m pytest -q tests
 ```
+
+GitHub Actions runs the same compile and fast test checks on pushes and pull
+requests.
 
 See:
 

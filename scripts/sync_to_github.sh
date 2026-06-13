@@ -15,6 +15,9 @@ rsync -a "$SRC_DIR/app" "$CLONE_DIR/"
 rsync -a "$SRC_DIR/web" "$CLONE_DIR/"
 rsync -a "$SRC_DIR/scripts" "$CLONE_DIR/"
 rsync -a "$SRC_DIR/tests" "$CLONE_DIR/"
+if [[ -d "$SRC_DIR/.github" ]]; then
+  rsync -a "$SRC_DIR/.github" "$CLONE_DIR/"
+fi
 
 for file in \
   README.md \
@@ -43,6 +46,7 @@ git add \
   .env.example \
   pytest.ini \
   requirements.txt \
+  .github \
   app \
   web \
   scripts \

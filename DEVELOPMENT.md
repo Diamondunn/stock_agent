@@ -2,20 +2,26 @@
 
 ## Local Workflow
 
-1. Activate the virtual environment.
+1. Bootstrap the environment when setting up a fresh clone.
+
+```bash
+bash scripts/bootstrap.sh
+```
+
+2. Activate the virtual environment.
 
 ```bash
 source .venv/bin/activate
 ```
 
-2. Run the fast project checks.
+3. Run the fast project checks.
 
 ```bash
 python -m compileall -q app web scripts tests
 python -m pytest -q tests
 ```
 
-3. Run the full suite before publishing.
+4. Run the full suite before publishing.
 
 ```bash
 python -m pytest -q
@@ -39,6 +45,7 @@ copied into a public page, screenshot, issue, or chat.
 - Update `README.md` when setup or routes change.
 - Add or update tests for watchlist, portfolio, and market-time behavior.
 - Run the full test suite.
+- Confirm GitHub Actions passes after pushing.
 - Verify `.env` contains only dummy values in the public repository.
 - Confirm `third_party/daily_stock_analysis` is handled as third-party code, not
   mixed into local application edits unless intentionally vendored.

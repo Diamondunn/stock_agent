@@ -73,6 +73,10 @@ def get_bot() -> StockChatBot:
     return bot
 
 
+def _llm_configured() -> bool:
+    return bool(os.getenv("DEEPSEEK_API_KEY", "").strip())
+
+
 # ===============================
 # 资产计算
 # ===============================
@@ -519,6 +523,15 @@ async def api_watchlist_remove(data: dict):
 async def chat(data: dict):
     try:
         message = (data or {}).get("message", "") or ""
+        if not _llm_configured():
+            return JSONResponse({
+                "ok": False,
+                "reply": (
+                    "AI assistant is not configured yet. "
+                    "Set DEEPSEEK_API_KEY in .env to enable chat. "
+                    "The portfolio dashboard and watchlist APIs still work without it."
+                ),
+            })
         reply = get_bot().ask(message)
         return JSONResponse({"ok": True, "reply": reply})
 

@@ -1,0 +1,71 @@
+import importlib
+
+import pandas as pd
+from fastapi.testclient import TestClient
+
+
+def _prepare_web_app(monkeypatch, tmp_path):
+    portfolio_store = importlib.import_module("app.portfolio_store")
+    monkeypatch.setattr(portfolio_store, "DB_FILE", str(tmp_path / "portfolio.db"))
+    monkeypatch.setattr(portfolio_store, "LEGACY_DB_FILE", tmp_path / "legacy.db")
+    monkeypatch.setenv("STOCK_LIST", "600519,000001")
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    portfolio_store.init_db()
+
+    web_main = importlib.import_module("web.main")
+    monkeypatch.setattr(web_main, "get_market_snapshot_cached", lambda force_refresh=False: pd.DataFrame())
+    monkeypatch.setattr(web_main, "_get_name_map_from_a_list", lambda: {})
+    monkeypatch.setattr(web_main, "_fetch_realtime_quote_fallback", lambda code: None)
+    monkeypatch.setattr(web_main, "is_cn_trading_time", lambda now=None: False)
+    return web_main, TestClient(web_main.app)
+
+
+def test_watchlist_api_add_remove_roundtrip(monkeypatch, tmp_path):
+    web_main, client = _prepare_web_app(monkeypatch, tmp_path)
+
+    response = client.get("/api/watchlist")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["source"] == "db"
+
+    response = client.post("/api/watchlist/add", json={"symbol": "300750", "name": "CATL"})
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+    assert any(item["symbol"] == "300750" for item in web_main.list_watchlist())
+
+    response = client.post("/api/watchlist/remove", json={"symbol": "300750"})
+    assert response.status_code == 200
+    assert response.json()["ok"] is True
+    assert all(item["symbol"] != "300750" for item in web_main.list_watchlist())
+
+
+def test_watchlist_quotes_survive_without_market_data(monkeypatch, tmp_path):
+    _, client = _prepare_web_app(monkeypatch, tmp_path)
+
+    response = client.get("/api/watchlist/quotes")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert [item["symbol"] for item in payload["items"]] == ["600519", "000001"]
+    assert all(item["price"] is None for item in payload["items"])
+
+
+def test_chat_without_llm_key_returns_actionable_message(monkeypatch, tmp_path):
+    _, client = _prepare_web_app(monkeypatch, tmp_path)
+
+    response = client.post("/api/chat", json={"message": "hello"})
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is False
+    assert "DEEPSEEK_API_KEY" in payload["reply"]
+
+
+def test_holdings_rebuild_endpoint(monkeypatch, tmp_path):
+    _, client = _prepare_web_app(monkeypatch, tmp_path)
+
+    response = client.post("/api/holdings/rebuild")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert "metrics" in payload
