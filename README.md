@@ -32,6 +32,9 @@ configuration practices:
   hard checks pass.
 - Risk view: realized PnL, win rate, profit factor, equity curve, and drawdown
   are available without calling external market APIs.
+- Self-learning review: closed trades are reconstructed into round trips, then
+  used to extract win/loss patterns, weak symbols, risk-reward problems, and
+  next-step strategy rules.
 - Watchlist research: cached quotes, local history, technical indicators, and
   trend signals support explainable stock observations.
 - Privacy-first publishing: real `.env`, databases, caches, logs, and deploy
@@ -43,6 +46,9 @@ Useful demo endpoints:
 GET /api/agent/profile       JSON capability profile and current memory status
 GET /api/agent/health        Operational checks without exposing secrets
 GET /api/agent/demo-prompts  Suggested questions for live demos
+GET /api/agent/trade-review  Historical trade review and learned lessons
+GET /api/agent/strategy-advice
+                             Strategy rules derived from past trades
 GET /agent/profile           Plain-text project profile
 ```
 
@@ -181,6 +187,20 @@ User message
 
 This keeps irreversible actions such as trade writes behind explicit structured
 parsing and rule-based validation instead of relying only on model text.
+
+The self-learning loop is deliberately explainable:
+
+```text
+Trade ledger
+  -> FIFO round-trip reconstruction
+  -> win/loss, profit factor, holding-period, and per-symbol statistics
+  -> learned lessons and weak-pattern detection
+  -> strategy rules for the next decision
+  -> optional human-confirmed lessons saved as long-term memory
+```
+
+This is not a black-box predictive model. It is an auditable feedback loop that
+helps the assistant avoid repeating the user's historically weak behaviors.
 
 ## Tests
 

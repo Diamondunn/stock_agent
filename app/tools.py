@@ -40,6 +40,7 @@ from app.trade_intelligence import (
     parse_trade_instruction,
     pretrade_risk_check,
 )
+from app.trade_review import build_trade_review, build_strategy_advice, save_lesson
 from app.data_sources import (
     ensure_suffix,
     get_a_stock_list,
@@ -147,6 +148,24 @@ def portfolio_pretrade_check(
 ) -> Dict[str, Any]:
     """交易前风控校验：检查方向、数量、价格、持仓、单笔金额和仓位集中度。"""
     return pretrade_risk_check(symbol, side, shares, price, fee)
+
+
+@tool
+def portfolio_trade_review_tool(limit: int = 30) -> Dict[str, Any]:
+    """复盘历史已闭合交易，输出胜率、盈亏因子、分标的表现、亏损模式和经验教训。"""
+    return build_trade_review(limit=limit)
+
+
+@tool
+def portfolio_strategy_advice_tool() -> Dict[str, Any]:
+    """基于历史交易复盘结果生成下一阶段可执行策略规则。"""
+    return build_strategy_advice()
+
+
+@tool
+def portfolio_save_lesson_tool(content: str) -> Dict[str, Any]:
+    """保存一条人工确认的交易经验，作为长期记忆的一部分。"""
+    return save_lesson(content)
 
 
 @tool
@@ -643,6 +662,9 @@ toolbox = [
     classify_user_intent_tool,
     parse_trade_instruction_tool,
     portfolio_pretrade_check,
+    portfolio_trade_review_tool,
+    portfolio_strategy_advice_tool,
+    portfolio_save_lesson_tool,
     portfolio_record_trade,
     portfolio_trades,
     portfolio_add_plan,

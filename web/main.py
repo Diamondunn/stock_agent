@@ -45,6 +45,7 @@ from app.agent_profile import (
     build_agent_profile,
     render_agent_profile_markdown,
 )
+from app.trade_review import build_strategy_advice, build_trade_review, save_lesson
 from app.dsa_bridge import get_dsa_app
 
 
@@ -430,6 +431,31 @@ async def api_agent_demo_prompts():
         return JSONResponse({"ok": True, "demo_questions": profile["demo_questions"]})
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e), "demo_questions": []})
+
+
+@router.get("/agent/trade-review")
+async def api_agent_trade_review(limit: int = Query(30, ge=1, le=200)):
+    try:
+        return JSONResponse(build_trade_review(limit=limit))
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+
+
+@router.get("/agent/strategy-advice")
+async def api_agent_strategy_advice():
+    try:
+        return JSONResponse(build_strategy_advice())
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+
+
+@router.post("/agent/lessons")
+async def api_agent_save_lesson(data: dict):
+    try:
+        content = (data or {}).get("content", "")
+        return JSONResponse(save_lesson(content))
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
 
 
 # ===============================

@@ -22,6 +22,12 @@ ASSISTANT_SYSTEM_PROMPT = """
    - “账户收益 / 历史收益 / 胜率 / 风险 / 回撤”
    → 必须调用 portfolio_performance 或 account_dashboard_tool
 
+2.1）用户问：
+   - “复盘 / 自学习 / 总结经验 / 交易习惯 / 策略优化 / 更合理策略”
+   → 必须调用 portfolio_trade_review_tool
+   → 如用户要求下一步策略，继续调用 portfolio_strategy_advice_tool
+   → 如用户明确确认某条经验，调用 portfolio_save_lesson_tool 保存为长期记忆
+
 3）用户问：
    - “关注列表 / 今日建议 / 每日建议 / 看看关注的”
    → 必须调用：
