@@ -1,386 +1,284 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<title>股票AI交易终端</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-:root{
-  --bg:#0b1220;
-  --panel:#111c35;
-  --border:#1f2f55;
-  --text:#e6edff;
-  --muted:#8fa7d9;
-  --red:#ff4d4f;
-  --green:#2ecc71;
-}
-
-body{
-  margin:0;
-  padding:20px;
-  background:var(--bg);
-  color:var(--text);
-  font-family:Consolas,monospace;
-}
-
-h2{margin-bottom:20px}
-
-.container{display:flex;gap:20px}
-.left{width:60%;display:flex;flex-direction:column;gap:20px}
-.right{width:40%;display:flex;flex-direction:column;gap:20px}
-
-.card{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:15px;
-}
-
-.row{display:flex;gap:15px}
-
-.kpi{
-  flex:1;
-  background:#0f1a2f;
-  padding:12px;
-  border-radius:8px;
-}
-
-.kpi .label{color:var(--muted);font-size:12px}
-.kpi .value{font-size:20px;margin-top:5px}
-
-.profit{color:var(--red)}
-.loss{color:var(--green)}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px;
-}
-
-th,td{
-  padding:8px;
-  border-bottom:1px solid #1c2b4a;
-}
-
-th{color:var(--muted)}
-
-.num{text-align:right}
-
-.watch-table th,
-.watch-table td{
-  padding:8px;
-  text-align:center;
-  vertical-align:middle;
-}
-.watch-table th{
-  padding:8px;
-  text-align:left;
-  vertical-align:middle;
-}
-.watch-table th.num,
-.watch-table td.num{
-  text-align:center;
-}
-.watch-table th:last-child,
-.watch-table td:last-child{
-  text-align:center;
-}
-
-.watch-card-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:10px;
-}
-
-.watch-card-title{
-  font-size:16px;
-  font-weight:600;
-}
-
-.watch-input{
-  display:flex;
-  gap:10px;
-  margin-bottom:10px;
-  align-items:center;
-}
-
-.watch-input input{
-  flex:1;
-  padding:8px 10px;
-  border-radius:8px;
-}
-
-.watch-input button{
-  padding:6px 12px;
-  border-radius:8px;
-}
-
-.watch-table{
-  background:#0f1a2f;
-  border:1px solid #1c2b4a;
-  border-radius:10px;
-  overflow:hidden;
-}
-
-.watch-table thead{
-  background:#0b1428;
-}
-.watch-table thead th{
-  text-align:center !important;
-}
-
-.watch-table tbody tr:nth-child(odd){
-  background:rgba(255,255,255,0.02);
-}
-
-.watch-table tbody tr:hover{
-  background:rgba(46,204,113,0.06);
-}
-
-.watch-empty{
-  color:var(--muted);
-  font-size:12px;
-  padding:10px 0 6px;
-}
-
-.up{
-  color:var(--red);
-  font-weight:bold;
-  animation:flashUp 0.6s;
-}
-
-.down{
-  color:var(--green);
-  font-weight:bold;
-  animation:flashDown 0.6s;
-}
-
-@keyframes flashUp{
-  0%{background:#4a1f1f}
-  100%{background:transparent}
-}
-
-@keyframes flashDown{
-  0%{background:#103d2a}
-  100%{background:transparent}
-}
-
-.chat-box{
-  height:380px;
-  overflow-y:auto;
-  border:1px solid #1c2b4a;
-  padding:10px;
-  border-radius:8px;
-  background:#0f1a2f;
-}
-
-.chat-input{
-  display:flex;
-  gap:10px;
-  margin-top:10px;
-}
-
-input{
-  flex:1;
-  padding:8px;
-  background:#0b1428;
-  color:var(--text);
-  border:1px solid #1c2b4a;
-  border-radius:6px;
-}
-
-button{
-  padding:6px 10px;
-  background:#1e335d;
-  color:white;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-button:hover{opacity:0.8}
-
-canvas{max-height:250px}
-.watch-input{display:flex;gap:10px;margin-bottom:10px}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>stock_agent Portfolio Workbench</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="/static/style.css?v=20260613">
 </head>
 
-<body>
+<body class="terminal-page">
+  <main class="shell">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow">stock_agent</p>
+        <h1>股票智能体研究工作台</h1>
+      </div>
+      <div class="status-strip" aria-label="system status">
+        <span>SQLite Memory</span>
+        <span>Risk Guard</span>
+        <span>Trade Review</span>
+      </div>
+    </header>
 
-<div class="container">
+    <section class="kpi-grid" aria-label="portfolio summary">
+      <article class="kpi">
+        <span class="label">总资产</span>
+        <strong class="value">{{ metrics.total_value }}</strong>
+      </article>
+      <article class="kpi">
+        <span class="label">总成本</span>
+        <strong class="value">{{ metrics.total_cost }}</strong>
+      </article>
+      <article class="kpi">
+        <span class="label">浮动收益</span>
+        <strong class="value {% if metrics.total_pnl >= 0 %}profit{% else %}loss{% endif %}">
+          {{ metrics.total_pnl }}
+        </strong>
+        <span class="subvalue">{{ metrics.total_pnl_pct }}%</span>
+      </article>
+      <article class="kpi">
+        <span class="label">已实现收益</span>
+        <strong class="value {% if account.realized_pnl >= 0 %}profit{% else %}loss{% endif %}">
+          {{ account.realized_pnl }}
+        </strong>
+      </article>
+      <article class="kpi">
+        <span class="label">胜率</span>
+        <strong class="value">{{ account.win_rate }}%</strong>
+      </article>
+    </section>
 
-<!-- LEFT -->
-<div class="left">
+    <div class="workspace-grid">
+      <section class="main-column">
+        <article class="card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Realized PnL</p>
+              <h2>账户历史收益</h2>
+            </div>
+            <div class="mini-metrics">
+              <span>买入 {{ account.buy_trades }}</span>
+              <span>卖出 {{ account.sell_trades }}</span>
+            </div>
+          </div>
+          <div class="chart-frame">
+            <canvas id="equityChart"></canvas>
+            <p class="empty-state" id="equityEmpty">暂无已实现收益曲线</p>
+          </div>
+        </article>
 
-<!-- 浮动收益 -->
-<div class="card">
-<div class="row">
-  <div class="kpi">
-    <div class="label">总资产</div>
-    <div class="value">{{ metrics.total_value }}</div>
-  </div>
-  <div class="kpi">
-    <div class="label">总成本</div>
-    <div class="value">{{ metrics.total_cost }}</div>
-  </div>
-  <div class="kpi">
-    <div class="label">浮动收益</div>
-    <div class="value {% if metrics.total_pnl >= 0 %}profit{% else %}loss{% endif %}">
-      {{ metrics.total_pnl }} ({{ metrics.total_pnl_pct }}%)
+        <div class="split-grid">
+          <article class="card">
+            <div class="section-header">
+              <div>
+                <p class="eyebrow">Allocation</p>
+                <h2>仓位分布</h2>
+              </div>
+            </div>
+            <div class="chart-frame compact">
+              <canvas id="pieChart"></canvas>
+              <p class="empty-state" id="pieEmpty">暂无持仓分布</p>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="section-header">
+              <div>
+                <p class="eyebrow">Review</p>
+                <h2>复盘学习</h2>
+              </div>
+              <button type="button" class="ghost-button" onclick="loadTradeReview()">刷新</button>
+            </div>
+            <div class="review-grid" id="reviewSummary">
+              <div class="review-tile">
+                <span>闭合交易</span>
+                <strong>--</strong>
+              </div>
+              <div class="review-tile">
+                <span>复盘胜率</span>
+                <strong>--</strong>
+              </div>
+              <div class="review-tile">
+                <span>盈亏因子</span>
+                <strong>--</strong>
+              </div>
+            </div>
+            <ul class="insight-list" id="lessonList">
+              <li>复盘数据加载中</li>
+            </ul>
+          </article>
+        </div>
+
+        <article class="card table-card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Positions</p>
+              <h2>持仓明细</h2>
+            </div>
+            <button type="button" class="ghost-button" onclick="rebuildHoldings()">重建持仓</button>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>代码</th>
+                  <th>名称</th>
+                  <th class="num">股数</th>
+                  <th class="num">成本</th>
+                  <th class="num">现价</th>
+                  <th class="num">市值</th>
+                  <th class="num">盈亏</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in metrics.details %}
+                <tr>
+                  <td class="mono">{{ item.code }}</td>
+                  <td>{{ item.name or "--" }}</td>
+                  <td class="num mono">{{ item.shares }}</td>
+                  <td class="num mono">{{ item.avg_cost }}</td>
+                  <td class="num mono">{{ item.latest_price }}</td>
+                  <td class="num mono">{{ item.market_value }}</td>
+                  <td class="num mono {% if item.pnl >= 0 %}profit{% else %}loss{% endif %}">
+                    {{ item.pnl }} ({{ item.pnl_pct }}%)
+                  </td>
+                </tr>
+                {% endfor %}
+                {% if not metrics.details %}
+                <tr>
+                  <td colspan="7" class="empty-cell">暂无持仓数据</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <aside class="side-column">
+        <article class="card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Watchlist</p>
+              <h2>关注列表</h2>
+            </div>
+            <div class="header-actions">
+              <span class="source-label" id="watchSource"></span>
+              <button type="button" class="ghost-button" onclick="refreshWatchlist(true)">刷新行情</button>
+            </div>
+          </div>
+          <div class="input-row">
+            <input id="watchSymbol" placeholder="输入代码 600519 或 600519.SS">
+            <button type="button" onclick="addWatch()">添加</button>
+          </div>
+          <p class="empty-state" id="watchEmpty" style="display:none">暂无关注股票</p>
+          <div class="table-scroll">
+            <table class="watch-table" id="watchTable">
+              <colgroup>
+                <col style="width:22%">
+                <col style="width:30%">
+                <col style="width:20%">
+                <col style="width:18%">
+                <col style="width:10%">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>代码</th>
+                  <th>名称</th>
+                  <th class="num">最新价</th>
+                  <th class="num">涨跌幅</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="watchBody"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Strategy</p>
+              <h2>策略建议</h2>
+            </div>
+            <button type="button" class="ghost-button" onclick="loadStrategyAdvice()">刷新</button>
+          </div>
+          <ul class="insight-list" id="strategyList">
+            <li>策略建议加载中</li>
+          </ul>
+        </article>
+      </aside>
     </div>
-  </div>
-</div>
-</div>
-
-<!-- 已实现收益 -->
-<div class="card">
-<h3>账户历史收益</h3>
-
-<div class="row">
-  <div class="kpi">
-    <div class="label">已实现收益</div>
-    <div class="value {% if account.realized_pnl >= 0 %}profit{% else %}loss{% endif %}">
-      {{ account.realized_pnl }}
-    </div>
-  </div>
-  <div class="kpi">
-    <div class="label">胜率</div>
-    <div class="value">{{ account.win_rate }}%</div>
-  </div>
-  <div class="kpi">
-    <div class="label">买入次数</div>
-    <div class="value">{{ account.buy_trades }}</div>
-  </div>
-  <div class="kpi">
-    <div class="label">卖出次数</div>
-    <div class="value">{{ account.sell_trades }}</div>
-  </div>
-</div>
-
-<canvas id="equityChart"></canvas>
-</div>
-
-<!-- 仓位分布 -->
-<div class="card">
-<h3>仓位分布</h3>
-<canvas id="pieChart"></canvas>
-</div>
-
-<!-- 持仓明细 -->
-<div class="card">
-<div class="row" style="justify-content:space-between;align-items:center">
-  <h3>持仓明细</h3>
-  <button onclick="rebuildHoldings()" style="padding:4px 8px;font-size:12px">重建持仓</button>
-</div>
-<table>
-<thead>
-<tr>
-<th>代码</th>
-<th>名称</th>
-<th class="num">股数</th>
-<th class="num">成本</th>
-<th class="num">现价</th>
-<th class="num">市值</th>
-<th class="num">盈亏</th>
-</tr>
-</thead>
-<tbody>
-{% for item in metrics.details %}
-<tr>
-<td>{{ item.code }}</td>
-<td>{{ item.name }}</td>
-<td class="num">{{ item.shares }}</td>
-<td class="num">{{ item.avg_cost }}</td>
-<td class="num">{{ item.latest_price }}</td>
-<td class="num">{{ item.market_value }}</td>
-<td class="num {% if item.pnl >= 0 %}profit{% else %}loss{% endif %}">
-{{ item.pnl }} ({{ item.pnl_pct }}%)
-</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
-
-</div>
-
-<!-- RIGHT -->
-<div class="right">
-
-<!-- 关注列表 -->
-<div class="card">
-<div class="watch-card-header">
-  <div class="watch-card-title">关注列表</div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <button onclick="refreshWatchlist(true)">刷新行情</button>
-    <div id="watchSource" style="color:#8fa7d9;font-size:12px"></div>
-  </div>
-</div>
-<div class="watch-empty" id="watchEmpty" style="display:none">暂无关注股票</div>
-
-<div class="watch-input">
-<input id="watchSymbol" placeholder="输入代码 600519 或 600519.SS">
-<button onclick="addWatch()">添加</button>
-</div>
-
-<table class="watch-table" id="watchTable">
-<colgroup>
-  <col style="width:18%">
-  <col style="width:34%">
-  <col style="width:20%">
-  <col style="width:18%">
-  <col style="width:10%">
-</colgroup>
-<thead>
-<tr>
-<th>代码</th>
-<th>名称</th>
-<th class="num">最新价</th>
-<th class="num">涨跌幅</th>
-<th></th>
-</tr>
-</thead>
-<tbody id="watchBody"></tbody>
-</table>
-</div>
-
-</div>
-</div>
+  </main>
 
 <script>
-// 仓位饼图
-new Chart(document.getElementById("pieChart"), {
-  type:'pie',
-  data:{
-    labels: {{ metrics.allocation_labels | tojson }},
-    datasets:[{data: {{ metrics.allocation_values | tojson }} }]
-  }
-});
+Chart.defaults.color = "#9aa8c7";
+Chart.defaults.borderColor = "rgba(154,168,199,0.16)";
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
-// 收益曲线
-const equityData = {{ account.equity_curve | tojson }};
-if(equityData && equityData.length>0){
-new Chart(document.getElementById("equityChart"),{
-  type:'line',
-  data:{
-    labels: equityData.map(x=>x.time.substring(0,10)),
-    datasets:[{
-      label:'累计收益',
-      data: equityData.map(x=>x.equity),
-      tension:0.3
-    }]
-  }
-});
+const allocationLabels = {{ metrics.allocation_labels | tojson }};
+const allocationValues = {{ metrics.allocation_values | tojson }};
+if(allocationValues && allocationValues.length > 0){
+  document.getElementById("pieEmpty").style.display = "none";
+  new Chart(document.getElementById("pieChart"), {
+    type:"doughnut",
+    data:{
+      labels: allocationLabels,
+      datasets:[{
+        data: allocationValues,
+        borderWidth: 0,
+        backgroundColor:["#60a5fa","#34d399","#fbbf24","#f87171","#a78bfa","#22d3ee"]
+      }]
+    },
+    options:{
+      plugins:{legend:{position:"bottom", labels:{boxWidth:10, boxHeight:10}}},
+      cutout:"62%"
+    }
+  });
 }
 
-// ====== 实时关注行情 ======
+const equityData = {{ account.equity_curve | tojson }};
+if(equityData && equityData.length > 0){
+  document.getElementById("equityEmpty").style.display = "none";
+  new Chart(document.getElementById("equityChart"),{
+    type:"line",
+    data:{
+      labels: equityData.map(x=>String(x.time).substring(0,10)),
+      datasets:[{
+        label:"累计收益",
+        data: equityData.map(x=>x.equity),
+        tension:0.28,
+        borderColor:"#60a5fa",
+        backgroundColor:"rgba(96,165,250,0.12)",
+        fill:true,
+        pointRadius:2
+      }]
+    },
+    options:{
+      maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{maxTicksLimit:6}}, y:{beginAtZero:false}}
+    }
+  });
+}
+
 let lastPrices = {};
+
+function setText(el, text){
+  if(el) el.textContent = text;
+}
+
+function formatMaybeNumber(value, digits=2){
+  if(value === null || value === undefined || value === "") return "--";
+  const num = Number(value);
+  return Number.isFinite(num) ? num.toFixed(digits) : String(value);
+}
 
 async function refreshWatchlist(force=false){
   const body = document.getElementById("watchBody");
-  body.innerHTML="";
+  body.innerHTML = "";
 
   let items = [];
   let source = "";
@@ -394,7 +292,6 @@ async function refreshWatchlist(force=false){
     items = [];
   }
 
-  // fallback: read watchlist symbols if quotes not available
   if(items.length === 0){
     try{
       const res = await fetch("/api/watchlist");
@@ -424,49 +321,105 @@ async function refreshWatchlist(force=false){
   if(tableEl) tableEl.style.display = "table";
 
   items.forEach(item=>{
-    let priceClass="";
-    if(item.price!==null && lastPrices[item.symbol]!==undefined){
-      if(item.price>lastPrices[item.symbol]) priceClass="up";
-      if(item.price<lastPrices[item.symbol]) priceClass="down";
+    let priceClass = "";
+    if(item.price !== null && lastPrices[item.symbol] !== undefined){
+      if(item.price > lastPrices[item.symbol]) priceClass = "up";
+      if(item.price < lastPrices[item.symbol]) priceClass = "down";
     }
+    lastPrices[item.symbol] = item.price;
 
-    lastPrices[item.symbol]=item.price;
-
-    const tr=document.createElement("tr");
-    const symbolTd=document.createElement("td");
-    symbolTd.textContent=item.symbol || "";
-    const nameTd=document.createElement("td");
-    nameTd.textContent=item.name || "";
-    const priceTd=document.createElement("td");
-    priceTd.className=`num ${priceClass}`.trim();
-    priceTd.textContent=item.price!==null?item.price:"--";
-    const changeTd=document.createElement("td");
-    changeTd.className=`num ${item.change_pct>0?'up':item.change_pct<0?'down':''}`.trim();
-    changeTd.textContent=item.change_pct!==null?Number(item.change_pct).toFixed(2)+'%':"--";
-    const actionTd=document.createElement("td");
-    const removeBtn=document.createElement("button");
-    removeBtn.type="button";
-    removeBtn.textContent="删除";
+    const tr = document.createElement("tr");
+    const symbolTd = document.createElement("td");
+    symbolTd.className = "mono";
+    symbolTd.textContent = item.symbol || "";
+    const nameTd = document.createElement("td");
+    nameTd.textContent = item.name || "--";
+    const priceTd = document.createElement("td");
+    priceTd.className = `num mono ${priceClass}`.trim();
+    priceTd.textContent = item.price !== null ? item.price : "--";
+    const changeTd = document.createElement("td");
+    changeTd.className = `num mono ${item.change_pct > 0 ? "up" : item.change_pct < 0 ? "down" : ""}`.trim();
+    changeTd.textContent = item.change_pct !== null ? `${formatMaybeNumber(item.change_pct)}%` : "--";
+    const actionTd = document.createElement("td");
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "icon-button";
+    removeBtn.title = "删除关注";
+    removeBtn.setAttribute("aria-label", "删除关注");
+    removeBtn.textContent = "×";
     removeBtn.addEventListener("click",()=>removeWatch(item.symbol));
     actionTd.appendChild(removeBtn);
     tr.append(symbolTd,nameTd,priceTd,changeTd,actionTd);
     body.appendChild(tr);
   });
 
-  if(source){
-    const sourceText = source === "env" ? "来源：STOCK_LIST" : "来源：数据库";
-    const el = document.getElementById("watchSource");
-    if(el) el.textContent = sourceText;
+  const sourceText = source === "env" ? "STOCK_LIST" : source === "db" ? "SQLite" : "";
+  setText(document.getElementById("watchSource"), sourceText);
+}
+
+async function loadTradeReview(){
+  const list = document.getElementById("lessonList");
+  try{
+    const res = await fetch("/api/agent/trade-review");
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error(data && data.error ? data.error : "复盘失败");
+    const summary = data.summary || {};
+    const tiles = document.querySelectorAll("#reviewSummary .review-tile strong");
+    if(tiles[0]) tiles[0].textContent = summary.closed_trades ?? "--";
+    if(tiles[1]) tiles[1].textContent = summary.win_rate !== undefined ? `${summary.win_rate}%` : "--";
+    if(tiles[2]) tiles[2].textContent = summary.profit_factor ?? "--";
+    list.innerHTML = "";
+    const lessons = Array.isArray(data.lessons) ? data.lessons : [];
+    if(lessons.length === 0){
+      const li = document.createElement("li");
+      li.textContent = "暂无可用复盘经验";
+      list.appendChild(li);
+      return;
+    }
+    lessons.slice(0,4).forEach(item=>{
+      const li = document.createElement("li");
+      li.textContent = item.lesson || String(item);
+      list.appendChild(li);
+    });
+  }catch(e){
+    list.innerHTML = "";
+    const li = document.createElement("li");
+    li.textContent = "复盘数据暂不可用";
+    list.appendChild(li);
+  }
+}
+
+async function loadStrategyAdvice(){
+  const list = document.getElementById("strategyList");
+  try{
+    const res = await fetch("/api/agent/strategy-advice");
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error(data && data.error ? data.error : "策略失败");
+    list.innerHTML = "";
+    const rules = Array.isArray(data.rules) ? data.rules : [];
+    if(rules.length === 0){
+      const li = document.createElement("li");
+      li.textContent = "暂无策略建议";
+      list.appendChild(li);
+      return;
+    }
+    rules.slice(0,5).forEach(rule=>{
+      const li = document.createElement("li");
+      li.textContent = rule;
+      list.appendChild(li);
+    });
+  }catch(e){
+    list.innerHTML = "";
+    const li = document.createElement("li");
+    li.textContent = "策略建议暂不可用";
+    list.appendChild(li);
   }
 }
 
 function isCnTradingTime(now = new Date()){
-  const day = now.getDay(); // 0 Sun - 6 Sat
+  const day = now.getDay();
   if(day === 0 || day === 6) return false;
-  const h = now.getHours();
-  const m = now.getMinutes();
-  const mins = h * 60 + m;
-  // 9:30-11:30, 13:00-15:00
+  const mins = now.getHours() * 60 + now.getMinutes();
   return (mins >= 570 && mins <= 690) || (mins >= 780 && mins <= 900);
 }
 
@@ -476,22 +429,16 @@ async function refreshWatchlistGuarded(){
   await refreshWatchlist();
 }
 
-const isTradingNow = isCnTradingTime();
-const forceOnce = !isTradingNow;
-refreshWatchlist(forceOnce);
-if(isTradingNow){
-  setInterval(refreshWatchlistGuarded,60000);
-}
-
-
 async function addWatch(){
-  const symbol=document.getElementById("watchSymbol").value.trim();
-  if(!symbol)return;
+  const input = document.getElementById("watchSymbol");
+  const symbol = input.value.trim();
+  if(!symbol) return;
   await fetch("/api/watchlist/add",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({symbol})
   });
+  input.value = "";
   refreshWatchlist();
 }
 
@@ -509,7 +456,7 @@ async function rebuildHoldings(){
     const res = await fetch("/api/holdings/rebuild",{method:"POST"});
     const data = await res.json();
     if(!data.ok){
-      alert("重建失败: " + (data.error||""));
+      alert("重建失败: " + (data.error || ""));
       return;
     }
     location.reload();
@@ -518,6 +465,13 @@ async function rebuildHoldings(){
   }
 }
 
+const isTradingNow = isCnTradingTime();
+refreshWatchlist(!isTradingNow);
+loadTradeReview();
+loadStrategyAdvice();
+if(isTradingNow){
+  setInterval(refreshWatchlistGuarded,60000);
+}
 </script>
 
 </body>

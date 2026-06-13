@@ -18,6 +18,7 @@ from fastapi import APIRouter, Request, Query
 from fastapi.responses import JSONResponse
 from fastapi.responses import PlainTextResponse
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 # ===============================
@@ -59,6 +60,15 @@ templates = Jinja2Templates(directory="web/templates")
 _alert_thread_started = False
 _alert_stop_event = threading.Event()
 _watchlist_fallback_lock = threading.Lock()
+
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+if os.path.isdir(STATIC_DIR):
+    try:
+        existing_static = any(getattr(route, "path", None) == "/static" for route in app.router.routes)
+        if not existing_static:
+            app.mount("/static", StaticFiles(directory=STATIC_DIR), name="stock-agent-static")
+    except Exception:
+        logger.warning("[web] failed to mount static files", exc_info=True)
 
 # 初始化数据库
 init_db()

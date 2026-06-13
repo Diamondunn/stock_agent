@@ -94,3 +94,13 @@ def test_agent_showcase_endpoints_are_available(monkeypatch, tmp_path):
     prompts_payload = prompts_response.json()
     assert prompts_payload["ok"] is True
     assert len(prompts_payload["demo_questions"]) >= 3
+
+
+def test_static_dashboard_css_is_served(monkeypatch, tmp_path):
+    _, client = _prepare_web_app(monkeypatch, tmp_path)
+
+    response = client.get("/static/style.css")
+
+    assert response.status_code == 200
+    assert "text/css" in response.headers["content-type"]
+    assert b"--surface" in response.content
