@@ -36,6 +36,9 @@ done
 
 cd "$CLONE_DIR"
 
+git config user.name "${GIT_AUTHOR_NAME:-Diamondunn}"
+git config user.email "${GIT_AUTHOR_EMAIL:-114246922+Diamondunn@users.noreply.github.com}"
+
 echo "Staging safe files ..."
 git add \
   README.md \
