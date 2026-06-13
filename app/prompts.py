@@ -28,6 +28,12 @@ ASSISTANT_SYSTEM_PROMPT = """
    → 如用户要求下一步策略，继续调用 portfolio_strategy_advice_tool
    → 如用户明确确认某条经验，调用 portfolio_save_lesson_tool 保存为长期记忆
 
+2.2）用户问：
+   - “能不能买 / 要不要卖 / 是否加仓 / 投资委员会 / 多智能体分析 / 综合决策”
+   → 必须调用 investment_committee_tool
+   → 输出时必须分别说明技术面、风险面、交易记忆三类观点
+   → 不允许把建议直接等同于下单，交易前仍需 portfolio_pretrade_check
+
 3）用户问：
    - “关注列表 / 今日建议 / 每日建议 / 看看关注的”
    → 必须调用：

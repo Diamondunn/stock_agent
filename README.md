@@ -35,6 +35,9 @@ configuration practices:
 - Self-learning review: closed trades are reconstructed into round trips, then
   used to extract win/loss patterns, weak symbols, risk-reward problems, and
   next-step strategy rules.
+- Investment committee: inspired by popular multi-agent trading systems, a
+  deterministic committee combines technical, risk, and trade-memory votes
+  before producing a BUY/WATCH/REDUCE-style decision.
 - Watchlist research: cached quotes, local history, technical indicators, and
   trend signals support explainable stock observations.
 - Privacy-first publishing: real `.env`, databases, caches, logs, and deploy
@@ -49,6 +52,8 @@ GET /api/agent/demo-prompts  Suggested questions for live demos
 GET /api/agent/trade-review  Historical trade review and learned lessons
 GET /api/agent/strategy-advice
                              Strategy rules derived from past trades
+GET /api/agent/committee/{symbol}
+                             Multi-role investment committee decision
 GET /agent/profile           Plain-text project profile
 ```
 
@@ -201,6 +206,32 @@ Trade ledger
 
 This is not a black-box predictive model. It is an auditable feedback loop that
 helps the assistant avoid repeating the user's historically weak behaviors.
+
+## What It Borrows From Popular Trading Agents
+
+The project intentionally adapts practical ideas seen in active open-source
+trading-agent projects without copying their code:
+
+- Multi-agent investment committees from projects such as AutoHedge and
+  TradingAgents-style systems.
+- Layered memory from FinMem-style trading agents.
+- Individual-stock plus portfolio context from TradingGoose-style research
+  workflows.
+- Risk-first decision gates before any persistent trade write.
+
+In this project those ideas are implemented conservatively:
+
+```text
+Technical analyst vote
+  + Risk manager vote
+  + Trade-memory reviewer vote
+  -> committee score
+  -> BUY_CANDIDATE / WATCH / AVOID_OR_REDUCE
+  -> pre-trade guard still required before any trade record
+```
+
+The committee is deterministic and testable. It provides decision evidence, not
+automatic order execution.
 
 ## Tests
 

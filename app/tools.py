@@ -41,6 +41,7 @@ from app.trade_intelligence import (
     pretrade_risk_check,
 )
 from app.trade_review import build_trade_review, build_strategy_advice, save_lesson
+from app.investment_committee import build_investment_committee_decision
 from app.data_sources import (
     ensure_suffix,
     get_a_stock_list,
@@ -166,6 +167,12 @@ def portfolio_strategy_advice_tool() -> Dict[str, Any]:
 def portfolio_save_lesson_tool(content: str) -> Dict[str, Any]:
     """保存一条人工确认的交易经验，作为长期记忆的一部分。"""
     return save_lesson(content)
+
+
+@tool
+def investment_committee_tool(symbol: str) -> Dict[str, Any]:
+    """多角色投研决策：技术面、风险面、交易记忆分别投票，输出可解释的 BUY/WATCH/REDUCE 建议。"""
+    return build_investment_committee_decision(symbol)
 
 
 @tool
@@ -665,6 +672,7 @@ toolbox = [
     portfolio_trade_review_tool,
     portfolio_strategy_advice_tool,
     portfolio_save_lesson_tool,
+    investment_committee_tool,
     portfolio_record_trade,
     portfolio_trades,
     portfolio_add_plan,
