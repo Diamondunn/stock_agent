@@ -443,6 +443,57 @@ canvas {
   color: var(--muted);
 }
 
+.trace-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: trace-step;
+}
+
+.trace-list li {
+  position: relative;
+  min-height: 86px;
+  padding: 28px 9px 9px;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.42);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  counter-increment: trace-step;
+}
+
+.trace-list li::before {
+  content: counter(trace-step);
+  position: absolute;
+  top: 8px;
+  left: 9px;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(96, 165, 250, 0.18);
+  color: #bfdbfe;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+}
+
+.trace-list strong,
+.trace-list span {
+  display: block;
+}
+
+.trace-list strong {
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 11px;
+}
+
 .table-card .section-header {
   position: sticky;
   top: 0;
@@ -540,6 +591,10 @@ canvas {
   .watch-table {
     min-width: 360px;
   }
+
+  .trace-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 560px) {
@@ -564,5 +619,9 @@ canvas {
 
   .watch-table {
     min-width: 330px;
+  }
+
+  .trace-list {
+    grid-template-columns: 1fr;
   }
 }

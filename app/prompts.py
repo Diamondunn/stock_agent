@@ -32,6 +32,7 @@ ASSISTANT_SYSTEM_PROMPT = """
    - “能不能买 / 要不要卖 / 是否加仓 / 投资委员会 / 多智能体分析 / 综合决策”
    → 必须调用 investment_committee_tool
    → 输出时必须分别说明技术面、风险面、交易记忆三类观点
+   → 如工具返回 cross_checks / coordinator / critic / collaboration_trace，必须总结协同流程、冲突点、最终仲裁和证据缺口
    → 不允许把建议直接等同于下单，交易前仍需 portfolio_pretrade_check
 
 3）用户问：

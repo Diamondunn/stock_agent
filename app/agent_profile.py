@@ -101,8 +101,8 @@ def _capabilities() -> List[Dict[str, str]]:
             "description": "Account dashboard computes realized PnL, win rate, profit factor, equity curve, and drawdown.",
         },
         {
-            "name": "Investment committee",
-            "description": "A deterministic multi-role layer combines technical, risk, and trade-memory votes before giving a decision.",
+            "name": "Multi-agent committee",
+            "description": "Specialist agents debate technical, risk, and trade-memory evidence; a coordinator arbitrates and a critic flags missing evidence.",
         },
         {
             "name": "Watchlist research",

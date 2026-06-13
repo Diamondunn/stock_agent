@@ -180,6 +180,161 @@ def _score_memory(symbol: str, review: Optional[Dict[str, Any]] = None) -> Dict[
     }
 
 
+def _build_cross_checks(votes: List[Dict[str, Any]], technical: Dict[str, Any]) -> List[Dict[str, Any]]:
+    by_role = {v.get("role"): v for v in votes}
+    technical_vote = by_role.get("technical_analyst", {})
+    risk_vote = by_role.get("risk_manager", {})
+    memory_vote = by_role.get("memory_reviewer", {})
+    checks: List[Dict[str, Any]] = []
+
+    if not technical.get("history_ok"):
+        checks.append(
+            {
+                "from": "coordinator",
+                "to": "technical_analyst",
+                "type": "data_gap",
+                "message": "历史行情不足，任何方向性结论都必须降级为观察。",
+                "severity": "high",
+            }
+        )
+
+    if int(technical_vote.get("score", 0)) > 0 and int(risk_vote.get("score", 0)) <= -2:
+        checks.append(
+            {
+                "from": "risk_manager",
+                "to": "technical_analyst",
+                "type": "veto",
+                "message": "技术面偏强但仓位集中度过高，买入候选需要被风控否决。",
+                "severity": "high",
+            }
+        )
+
+    if int(technical_vote.get("score", 0)) > 0 and int(memory_vote.get("score", 0)) <= -2:
+        checks.append(
+            {
+                "from": "memory_reviewer",
+                "to": "technical_analyst",
+                "type": "challenge",
+                "message": "技术信号偏强，但历史交易记忆为负，需要更严格的触发条件。",
+                "severity": "medium",
+            }
+        )
+
+    if int(technical_vote.get("score", 0)) < 0 and int(memory_vote.get("score", 0)) > 0:
+        checks.append(
+            {
+                "from": "technical_analyst",
+                "to": "memory_reviewer",
+                "type": "challenge",
+                "message": "历史交易表现较好，但当前技术面偏弱，应等待价格结构改善。",
+                "severity": "medium",
+            }
+        )
+
+    if not checks:
+        checks.append(
+            {
+                "from": "coordinator",
+                "to": "committee",
+                "type": "alignment",
+                "message": "专家意见没有出现硬冲突，可进入综合仲裁。",
+                "severity": "low",
+            }
+        )
+    return checks
+
+
+def _coordinate_decision(
+    votes: List[Dict[str, Any]],
+    technical: Dict[str, Any],
+    cross_checks: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    total_score = sum(int(v.get("score", 0)) for v in votes)
+    has_risk_veto = any(c.get("type") == "veto" and c.get("from") == "risk_manager" for c in cross_checks)
+    has_data_gap = any(c.get("type") == "data_gap" for c in cross_checks)
+    has_memory_challenge = any(c.get("type") == "challenge" and c.get("from") == "memory_reviewer" for c in cross_checks)
+
+    if has_data_gap:
+        action = "WATCH"
+        rationale = "关键行情证据缺失，协调员将决策降级为观察。"
+    elif has_risk_veto:
+        action = "AVOID_OR_REDUCE"
+        rationale = "风控提出硬否决，优先保护组合集中度。"
+    elif total_score >= 3 and not has_memory_challenge:
+        action = "BUY_CANDIDATE"
+        rationale = "技术、风险、记忆没有形成重大冲突，综合评分达到买入候选阈值。"
+    elif total_score <= -3:
+        action = "AVOID_OR_REDUCE"
+        rationale = "综合评分偏负，暂不支持新增风险暴露。"
+    else:
+        action = "WATCH"
+        rationale = "专家意见未形成足够一致性，保持观察更合理。"
+
+    return {
+        "role": "coordinator",
+        "action": action,
+        "score": total_score,
+        "rationale": rationale,
+        "constraints_applied": [c["type"] for c in cross_checks if c.get("severity") in {"high", "medium"}],
+    }
+
+
+def _critic_review(coordinator: Dict[str, Any], technical: Dict[str, Any], votes: List[Dict[str, Any]]) -> Dict[str, Any]:
+    missing: List[str] = []
+    warnings: List[str] = []
+
+    if not technical.get("history_ok"):
+        missing.append("历史行情")
+    if not any(v.get("role") == "memory_reviewer" and len(v.get("evidence", [])) > 1 for v in votes):
+        missing.append("足够的闭合交易记忆")
+    if coordinator.get("action") == "BUY_CANDIDATE":
+        warnings.append("买入候选仍需经过 portfolio_pretrade_check，不能直接自动下单。")
+    if coordinator.get("action") == "AVOID_OR_REDUCE":
+        warnings.append("减仓/回避建议需要结合持仓计划和失效条件复核。")
+
+    return {
+        "role": "critic",
+        "approval": len(missing) == 0,
+        "missing_evidence": missing,
+        "warnings": warnings or ["暂无额外批判意见。"],
+    }
+
+
+def _collaboration_trace(
+    votes: List[Dict[str, Any]],
+    cross_checks: List[Dict[str, Any]],
+    coordinator: Dict[str, Any],
+    critic: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    return [
+        {
+            "phase": "evidence_collection",
+            "agents": ["technical_analyst", "risk_manager", "memory_reviewer"],
+            "summary": "三个专家 agent 分别读取行情、组合仓位和交易记忆。",
+        },
+        {
+            "phase": "specialist_votes",
+            "agents": [v.get("role") for v in votes],
+            "summary": "专家 agent 给出独立分数、立场和证据。",
+        },
+        {
+            "phase": "cross_examination",
+            "agents": sorted({c.get("from") for c in cross_checks} | {c.get("to") for c in cross_checks}),
+            "summary": "角色之间互相质询，风控可以否决技术面买入信号。",
+        },
+        {
+            "phase": "coordination",
+            "agents": ["coordinator"],
+            "summary": coordinator.get("rationale", ""),
+        },
+        {
+            "phase": "critique",
+            "agents": ["critic"],
+            "summary": "批判员检查缺失证据和执行风险。",
+        },
+    ]
+
+
 def build_investment_committee_decision(
     symbol: str,
     history_provider: Optional[Callable[[str, str], Any]] = None,
@@ -196,7 +351,10 @@ def build_investment_committee_decision(
     memory_vote = _score_memory(symbol)
 
     votes = [technical_vote, risk_vote, memory_vote]
-    total_score = sum(int(v.get("score", 0)) for v in votes)
+    cross_checks = _build_cross_checks(votes, technical)
+    coordinator = _coordinate_decision(votes, technical, cross_checks)
+    critic = _critic_review(coordinator, technical, votes)
+    total_score = int(coordinator.get("score", 0))
     evidence_count = sum(len(v.get("evidence", [])) for v in votes)
     history_ok = bool(technical.get("history_ok"))
     confidence = "low"
@@ -205,12 +363,7 @@ def build_investment_committee_decision(
     if history_ok and abs(total_score) >= 4 and evidence_count >= 4:
         confidence = "high"
 
-    if total_score >= 3:
-        action = "BUY_CANDIDATE"
-    elif total_score <= -3:
-        action = "AVOID_OR_REDUCE"
-    else:
-        action = "WATCH"
+    action = str(coordinator.get("action", "WATCH"))
 
     holding = get_holding(symbol)
     return {
@@ -223,6 +376,11 @@ def build_investment_committee_decision(
         "has_position": holding is not None,
         "technical": technical,
         "votes": votes,
+        "cross_checks": cross_checks,
+        "coordinator": coordinator,
+        "critic": critic,
+        "agents": votes + [coordinator, critic],
+        "collaboration_trace": _collaboration_trace(votes, cross_checks, coordinator, critic),
         "next_steps": _next_steps(action, holding is not None),
     }
 

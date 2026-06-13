@@ -35,9 +35,9 @@ configuration practices:
 - Self-learning review: closed trades are reconstructed into round trips, then
   used to extract win/loss patterns, weak symbols, risk-reward problems, and
   next-step strategy rules.
-- Investment committee: inspired by popular multi-agent trading systems, a
-  deterministic committee combines technical, risk, and trade-memory votes
-  before producing a BUY/WATCH/REDUCE-style decision.
+- Multi-agent committee: inspired by popular trading-agent systems, specialist
+  agents produce technical, risk, and memory views, then a coordinator and critic
+  reconcile conflicts before producing a BUY/WATCH/REDUCE-style decision.
 - Watchlist research: cached quotes, local history, technical indicators, and
   trend signals support explainable stock observations.
 - Dashboard committee panel: `/portfolio/embed` exposes the multi-role decision
@@ -224,10 +224,11 @@ trading-agent projects without copying their code:
 In this project those ideas are implemented conservatively:
 
 ```text
-Technical analyst vote
-  + Risk manager vote
-  + Trade-memory reviewer vote
-  -> committee score
+Evidence collection
+  -> technical analyst / risk manager / trade-memory reviewer
+  -> cross-examination and risk veto checks
+  -> coordinator arbitration
+  -> critic review of missing evidence and execution risk
   -> BUY_CANDIDATE / WATCH / AVOID_OR_REDUCE
   -> pre-trade guard still required before any trade record
 ```

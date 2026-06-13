@@ -37,6 +37,20 @@ def test_committee_outputs_buy_candidate_for_aligned_positive_signals(monkeypatc
     assert decision["action"] == "BUY_CANDIDATE"
     assert decision["confidence"] in {"medium", "high"}
     assert len(decision["votes"]) == 3
+    assert [step["phase"] for step in decision["collaboration_trace"]] == [
+        "evidence_collection",
+        "specialist_votes",
+        "cross_examination",
+        "coordination",
+        "critique",
+    ]
+    assert {agent["role"] for agent in decision["agents"]} >= {
+        "technical_analyst",
+        "risk_manager",
+        "memory_reviewer",
+        "coordinator",
+        "critic",
+    }
 
 
 def test_committee_penalizes_concentrated_existing_position(monkeypatch, tmp_path):
@@ -47,8 +61,10 @@ def test_committee_penalizes_concentrated_existing_position(monkeypatch, tmp_pat
     risk_vote = next(v for v in decision["votes"] if v["role"] == "risk_manager")
 
     assert decision["has_position"] is True
+    assert decision["action"] == "AVOID_OR_REDUCE"
     assert risk_vote["score"] < 0
     assert "集中度风险" in risk_vote["evidence"][0]
+    assert any(check["type"] == "veto" for check in decision["cross_checks"])
 
 
 def test_committee_uses_negative_trade_memory(monkeypatch, tmp_path):
@@ -61,3 +77,4 @@ def test_committee_uses_negative_trade_memory(monkeypatch, tmp_path):
 
     assert memory_vote["score"] < 0
     assert any("贡献为负" in item for item in memory_vote["evidence"])
+    assert any(check["from"] == "memory_reviewer" for check in decision["cross_checks"])
