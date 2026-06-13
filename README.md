@@ -40,6 +40,8 @@ configuration practices:
   before producing a BUY/WATCH/REDUCE-style decision.
 - Watchlist research: cached quotes, local history, technical indicators, and
   trend signals support explainable stock observations.
+- Dashboard committee panel: `/portfolio/embed` exposes the multi-role decision
+  result directly in the web UI for demos.
 - Privacy-first publishing: real `.env`, databases, caches, logs, and deploy
   keys are excluded from GitHub sync.
 

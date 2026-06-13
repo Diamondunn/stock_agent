@@ -19,6 +19,7 @@
         <span>SQLite Memory</span>
         <span>Risk Guard</span>
         <span>Trade Review</span>
+        <span>Investment Committee</span>
       </div>
     </header>
 
@@ -194,6 +195,32 @@
               </thead>
               <tbody id="watchBody"></tbody>
             </table>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Committee</p>
+              <h2>投研委员会</h2>
+            </div>
+            <button type="button" class="ghost-button" onclick="loadCommitteeDecision()">分析</button>
+          </div>
+          <div class="input-row">
+            <input id="committeeSymbol" placeholder="输入代码 600519 或 000001" value="600519">
+            <button type="button" onclick="loadCommitteeDecision()">运行</button>
+          </div>
+          <div class="committee-panel" id="committeePanel">
+            <div class="committee-summary">
+              <span class="badge neutral" id="committeeAction">等待分析</span>
+              <div>
+                <strong id="committeeScore">--</strong>
+                <span id="committeeConfidence">置信度 --</span>
+              </div>
+            </div>
+            <ul class="vote-list" id="committeeVotes">
+              <li>输入股票代码后运行多角色决策</li>
+            </ul>
           </div>
         </article>
 
@@ -416,6 +443,73 @@ async function loadStrategyAdvice(){
   }
 }
 
+function badgeClassForAction(action){
+  if(action === "BUY_CANDIDATE") return "badge buy";
+  if(action === "AVOID_OR_REDUCE") return "badge reduce";
+  if(action === "WATCH") return "badge watch";
+  return "badge neutral";
+}
+
+function labelForAction(action){
+  if(action === "BUY_CANDIDATE") return "买入候选";
+  if(action === "AVOID_OR_REDUCE") return "回避/减仓";
+  if(action === "WATCH") return "观察";
+  return "等待分析";
+}
+
+async function loadCommitteeDecision(){
+  const input = document.getElementById("committeeSymbol");
+  const votesEl = document.getElementById("committeeVotes");
+  const actionEl = document.getElementById("committeeAction");
+  const scoreEl = document.getElementById("committeeScore");
+  const confidenceEl = document.getElementById("committeeConfidence");
+  const symbol = (input.value || "").trim();
+  if(!symbol) return;
+
+  actionEl.className = "badge neutral";
+  actionEl.textContent = "分析中";
+  scoreEl.textContent = "--";
+  confidenceEl.textContent = "置信度 --";
+  votesEl.innerHTML = "<li>正在读取技术面、仓位风险和交易记忆</li>";
+
+  try{
+    const res = await fetch(`/api/agent/committee/${encodeURIComponent(symbol)}`);
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error(data && data.error ? data.error : "分析失败");
+
+    actionEl.className = badgeClassForAction(data.action);
+    actionEl.textContent = labelForAction(data.action);
+    scoreEl.textContent = `评分 ${data.score ?? "--"}`;
+    confidenceEl.textContent = `置信度 ${data.confidence || "--"}`;
+    votesEl.innerHTML = "";
+
+    const votes = Array.isArray(data.votes) ? data.votes : [];
+    if(votes.length === 0){
+      const li = document.createElement("li");
+      li.textContent = "暂无角色投票";
+      votesEl.appendChild(li);
+      return;
+    }
+
+    votes.forEach(vote=>{
+      const li = document.createElement("li");
+      const evidence = Array.isArray(vote.evidence) ? vote.evidence.slice(0,2).join("；") : "";
+      const title = document.createElement("strong");
+      title.textContent = `${vote.role || "role"} · ${vote.stance || "neutral"} · ${vote.score ?? 0}`;
+      const detail = document.createElement("span");
+      detail.textContent = evidence || "暂无证据";
+      li.append(title, detail);
+      votesEl.appendChild(li);
+    });
+  }catch(e){
+    actionEl.className = "badge neutral";
+    actionEl.textContent = "暂不可用";
+    scoreEl.textContent = "--";
+    confidenceEl.textContent = "置信度 --";
+    votesEl.innerHTML = "<li>投研委员会暂不可用</li>";
+  }
+}
+
 function isCnTradingTime(now = new Date()){
   const day = now.getDay();
   if(day === 0 || day === 6) return false;
@@ -469,6 +563,7 @@ const isTradingNow = isCnTradingTime();
 refreshWatchlist(!isTradingNow);
 loadTradeReview();
 loadStrategyAdvice();
+loadCommitteeDecision();
 if(isTradingNow){
   setInterval(refreshWatchlistGuarded,60000);
 }

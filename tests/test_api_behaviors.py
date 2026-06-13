@@ -104,3 +104,13 @@ def test_static_dashboard_css_is_served(monkeypatch, tmp_path):
     assert response.status_code == 200
     assert "text/css" in response.headers["content-type"]
     assert b"--surface" in response.content
+
+
+def test_dashboard_exposes_investment_committee_panel(monkeypatch, tmp_path):
+    _, client = _prepare_web_app(monkeypatch, tmp_path)
+
+    response = client.get("/portfolio/embed")
+
+    assert response.status_code == 200
+    assert "投研委员会" in response.text
+    assert "loadCommitteeDecision" in response.text
