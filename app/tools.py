@@ -34,6 +34,7 @@ from app.portfolio_analytics import (
     build_portfolio_snapshot,
     compute_portfolio_performance,
 )
+from app.agent_profile import build_agent_profile, agent_health
 from app.data_sources import (
     ensure_suffix,
     get_a_stock_list,
@@ -535,6 +536,18 @@ def account_dashboard_tool() -> Dict[str, Any]:
 
 
 @tool
+def agent_profile_tool() -> Dict[str, Any]:
+    """返回智能体能力画像、记忆状态、可展示示例问题和项目状态。"""
+    return {"ok": True, "profile": build_agent_profile()}
+
+
+@tool
+def agent_health_tool() -> Dict[str, Any]:
+    """检查智能体运行健康状态，不泄露任何 API key 或私密配置值。"""
+    return agent_health()
+
+
+@tool
 def dsa_analyze_stock_tool(
     symbol: str,
     report_type: str = "detailed",
@@ -605,6 +618,8 @@ toolbox = [
     watchlist_snapshot_tool,
     watchlist_analysis_tool,
     account_dashboard_tool,
+    agent_profile_tool,
+    agent_health_tool,
     dsa_analyze_stock_tool,
     dsa_analyze_watchlist_tool,
     dsa_market_review_tool,

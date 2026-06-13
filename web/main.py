@@ -16,6 +16,7 @@ from typing import Dict, Any
 # ===============================
 from fastapi import APIRouter, Request, Query
 from fastapi.responses import JSONResponse
+from fastapi.responses import PlainTextResponse
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -39,6 +40,11 @@ from app.portfolio_store import (
     rebuild_holdings_from_trades,
 )
 from app.account_analytics import build_account_dashboard
+from app.agent_profile import (
+    agent_health,
+    build_agent_profile,
+    render_agent_profile_markdown,
+)
 from app.dsa_bridge import get_dsa_app
 
 
@@ -399,6 +405,34 @@ async def api_metrics():
 
 
 # ===============================
+# API - Agent showcase and health
+# ===============================
+@router.get("/agent/profile")
+async def api_agent_profile():
+    try:
+        return JSONResponse({"ok": True, "profile": build_agent_profile()})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+
+
+@router.get("/agent/health")
+async def api_agent_health():
+    try:
+        return JSONResponse(agent_health())
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e), "checks": []})
+
+
+@router.get("/agent/demo-prompts")
+async def api_agent_demo_prompts():
+    try:
+        profile = build_agent_profile()
+        return JSONResponse({"ok": True, "demo_questions": profile["demo_questions"]})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e), "demo_questions": []})
+
+
+# ===============================
 # API - 关注股实时行情
 # ===============================
 @router.get("/watchlist/quotes")
@@ -559,6 +593,11 @@ async def portfolio_page(request: Request):
             "account": account,
         },
     )
+
+
+@app.get("/agent/profile", response_class=PlainTextResponse)
+async def agent_profile_page():
+    return render_agent_profile_markdown()
 
 
 @app.get("/portfolio/")

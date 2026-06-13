@@ -69,3 +69,28 @@ def test_holdings_rebuild_endpoint(monkeypatch, tmp_path):
     payload = response.json()
     assert payload["ok"] is True
     assert "metrics" in payload
+
+
+def test_agent_showcase_endpoints_are_available(monkeypatch, tmp_path):
+    _, client = _prepare_web_app(monkeypatch, tmp_path)
+
+    profile_response = client.get("/api/agent/profile")
+    assert profile_response.status_code == 200
+    profile_payload = profile_response.json()
+    assert profile_payload["ok"] is True
+    assert profile_payload["profile"]["name"] == "stock_agent"
+    assert profile_payload["profile"]["data_status"]["watchlist_count"] == 2
+    assert profile_payload["profile"]["data_status"]["has_llm_key"] is False
+    assert profile_payload["profile"]["demo_questions"]
+
+    health_response = client.get("/api/agent/health")
+    assert health_response.status_code == 200
+    health_payload = health_response.json()
+    assert health_payload["ok"] is True
+    assert any(check["name"] == "database" for check in health_payload["checks"])
+
+    prompts_response = client.get("/api/agent/demo-prompts")
+    assert prompts_response.status_code == 200
+    prompts_payload = prompts_response.json()
+    assert prompts_payload["ok"] is True
+    assert len(prompts_payload["demo_questions"]) >= 3

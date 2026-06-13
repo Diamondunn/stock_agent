@@ -17,6 +17,41 @@ analysis tools into one personal research workspace.
 - Bridge into `daily_stock_analysis` for deeper stock and market reports.
 - View a lightweight portfolio dashboard at `/portfolio/embed`.
 
+## Agent Showcase
+
+This project is designed to be demo-friendly as an AI agent portfolio project.
+The assistant has persistent memory, tool calls, risk analytics, and safe public
+configuration practices:
+
+- Persistent memory: holdings, trades, watchlist items, and investment plans are
+  stored in SQLite.
+- Agent tools: the LLM can call portfolio, watchlist, trade logging, account
+  analytics, and deep-analysis tools.
+- Risk view: realized PnL, win rate, profit factor, equity curve, and drawdown
+  are available without calling external market APIs.
+- Watchlist research: cached quotes, local history, technical indicators, and
+  trend signals support explainable stock observations.
+- Privacy-first publishing: real `.env`, databases, caches, logs, and deploy
+  keys are excluded from GitHub sync.
+
+Useful demo endpoints:
+
+```text
+GET /api/agent/profile       JSON capability profile and current memory status
+GET /api/agent/health        Operational checks without exposing secrets
+GET /api/agent/demo-prompts  Suggested questions for live demos
+GET /agent/profile           Plain-text project profile
+```
+
+Example demo prompts:
+
+```text
+我的组合现在风险主要集中在哪里？
+分析我的关注列表，给出今天最值得观察的三件事。
+复盘我的历史交易胜率和最大回撤。
+基于持仓和关注列表，生成下一周观察计划。
+```
+
 ## Project Layout
 
 ```text
