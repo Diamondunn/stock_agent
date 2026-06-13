@@ -218,9 +218,15 @@
                 <span id="committeeConfidence">置信度 --</span>
               </div>
             </div>
+            <div class="agent-section-title">专家 Agent</div>
             <ul class="vote-list" id="committeeVotes">
               <li>输入股票代码后运行多角色决策</li>
             </ul>
+            <div class="agent-section-title">治理 Agent</div>
+            <ul class="agent-list" id="committeeAgents">
+              <li>coordinator 和 critic 等待协同</li>
+            </ul>
+            <div class="agent-section-title">协同流程</div>
             <ol class="trace-list" id="committeeTrace">
               <li>等待协同流程</li>
             </ol>
@@ -463,6 +469,7 @@ function labelForAction(action){
 async function loadCommitteeDecision(){
   const input = document.getElementById("committeeSymbol");
   const votesEl = document.getElementById("committeeVotes");
+  const agentsEl = document.getElementById("committeeAgents");
   const traceEl = document.getElementById("committeeTrace");
   const actionEl = document.getElementById("committeeAction");
   const scoreEl = document.getElementById("committeeScore");
@@ -475,6 +482,7 @@ async function loadCommitteeDecision(){
   scoreEl.textContent = "--";
   confidenceEl.textContent = "置信度 --";
   votesEl.innerHTML = "<li>正在读取技术面、仓位风险和交易记忆</li>";
+  agentsEl.innerHTML = "<li>协调员和批判员等待专家观点</li>";
   traceEl.innerHTML = "<li>协同流程准备中</li>";
 
   try{
@@ -487,6 +495,7 @@ async function loadCommitteeDecision(){
     scoreEl.textContent = `评分 ${data.score ?? "--"}`;
     confidenceEl.textContent = `置信度 ${data.confidence || "--"}`;
     votesEl.innerHTML = "";
+    agentsEl.innerHTML = "";
     traceEl.innerHTML = "";
 
     const votes = Array.isArray(data.votes) ? data.votes : [];
@@ -507,6 +516,32 @@ async function loadCommitteeDecision(){
       li.append(title, detail);
       votesEl.appendChild(li);
     });
+
+    const governanceAgents = [data.coordinator, data.critic].filter(Boolean);
+    if(governanceAgents.length === 0){
+      const li = document.createElement("li");
+      li.textContent = "暂无治理 agent 输出";
+      agentsEl.appendChild(li);
+    }else{
+      governanceAgents.forEach(agent=>{
+        const li = document.createElement("li");
+        const title = document.createElement("strong");
+        title.textContent = agent.role || "agent";
+        const detail = document.createElement("span");
+        if(agent.role === "coordinator"){
+          detail.textContent = `${labelForAction(agent.action)} · ${agent.rationale || "等待仲裁"}`;
+        }else if(agent.role === "critic"){
+          const missing = Array.isArray(agent.missing_evidence) && agent.missing_evidence.length > 0
+            ? `缺口: ${agent.missing_evidence.join("、")}`
+            : "证据完整";
+          detail.textContent = `${agent.approval ? "通过" : "保留意见"} · ${missing}`;
+        }else{
+          detail.textContent = "等待输出";
+        }
+        li.append(title, detail);
+        agentsEl.appendChild(li);
+      });
+    }
 
     const traces = Array.isArray(data.collaboration_trace) ? data.collaboration_trace : [];
     if(traces.length === 0){
@@ -530,6 +565,7 @@ async function loadCommitteeDecision(){
     scoreEl.textContent = "--";
     confidenceEl.textContent = "置信度 --";
     votesEl.innerHTML = "<li>投研委员会暂不可用</li>";
+    agentsEl.innerHTML = "<li>治理 agent 暂不可用</li>";
     traceEl.innerHTML = "<li>协同流程暂不可用</li>";
   }
 }

@@ -443,6 +443,50 @@ canvas {
   color: var(--muted);
 }
 
+.agent-section-title {
+  margin: 13px 0 8px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 720;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.agent-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agent-list li {
+  min-height: 76px;
+  padding: 10px 11px;
+  border: 1px solid rgba(52, 211, 153, 0.22);
+  border-radius: 7px;
+  background: rgba(6, 78, 59, 0.13);
+  color: #d7e0ef;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.agent-list strong,
+.agent-list span {
+  display: block;
+}
+
+.agent-list strong {
+  margin-bottom: 5px;
+  color: #bbf7d0;
+  font-size: 12px;
+}
+
+.agent-list span {
+  color: var(--muted);
+}
+
 .trace-list {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -594,6 +638,10 @@ canvas {
 
   .trace-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agent-list {
+    grid-template-columns: 1fr;
   }
 }
 
