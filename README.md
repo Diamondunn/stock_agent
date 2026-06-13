@@ -27,6 +27,9 @@ configuration practices:
   stored in SQLite.
 - Agent tools: the LLM can call portfolio, watchlist, trade logging, account
   analytics, and deep-analysis tools.
+- Deterministic trade workflow: natural-language trade text is parsed into
+  structured fields, checked by a pre-trade risk guard, then persisted only when
+  hard checks pass.
 - Risk view: realized PnL, win rate, profit factor, equity curve, and drawdown
   are available without calling external market APIs.
 - Watchlist research: cached quotes, local history, technical indicators, and
@@ -148,6 +151,36 @@ ALERT_PCT=5
 `STOCK_LIST` is used as an initial or fallback watchlist. Once the database
 watchlist has entries, database values take priority so web add/remove actions
 remain effective.
+
+Pre-trade guardrails:
+
+```bash
+MAX_TRADE_VALUE=100000
+MAX_POSITION_WEIGHT=0.35
+```
+
+`MAX_TRADE_VALUE` blocks oversized single trades. `MAX_POSITION_WEIGHT` warns
+when a new buy would make one symbol too concentrated in the cost-basis
+portfolio. Sell orders are blocked when requested shares exceed current
+holdings.
+
+## Agent Internals
+
+The assistant is intentionally split into deterministic components plus LLM
+reasoning:
+
+```text
+User message
+  -> classify_user_intent_tool
+  -> parse_trade_instruction_tool, when trade-like
+  -> portfolio_pretrade_check
+  -> portfolio_record_trade, only when hard checks pass
+  -> portfolio/watchlist/account analysis tools
+  -> final answer
+```
+
+This keeps irreversible actions such as trade writes behind explicit structured
+parsing and rule-based validation instead of relying only on model text.
 
 ## Tests
 

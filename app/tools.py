@@ -35,6 +35,11 @@ from app.portfolio_analytics import (
     compute_portfolio_performance,
 )
 from app.agent_profile import build_agent_profile, agent_health
+from app.trade_intelligence import (
+    classify_intent,
+    parse_trade_instruction,
+    pretrade_risk_check,
+)
 from app.data_sources import (
     ensure_suffix,
     get_a_stock_list,
@@ -92,6 +97,10 @@ def portfolio_record_trade(
     """
 
     sym = ensure_suffix(symbol)
+    risk = pretrade_risk_check(sym, side, shares, price, fee)
+    if not risk["ok"]:
+        return "交易未记录，风控校验未通过：" + "；".join(risk["blockers"])
+
     code = sym.split(".")[0]
 
     # 🔎 自动查股票名称
@@ -114,6 +123,30 @@ def portfolio_record_trade(
     )
 
     return f"✅ 已记录交易：{sym}（{name}） {side} {shares} 股 @ {price}"
+
+
+@tool
+def classify_user_intent_tool(message: str) -> Dict[str, Any]:
+    """对用户问题做确定性意图分类，用于选择组合、关注股、交易或复盘工具。"""
+    return classify_intent(message)
+
+
+@tool
+def parse_trade_instruction_tool(text: str) -> Dict[str, Any]:
+    """从自然语言交易指令中解析方向、股票代码、数量、价格和备注。"""
+    return parse_trade_instruction(text)
+
+
+@tool
+def portfolio_pretrade_check(
+    symbol: str,
+    side: str,
+    shares: float,
+    price: float,
+    fee: float = 0.0,
+) -> Dict[str, Any]:
+    """交易前风控校验：检查方向、数量、价格、持仓、单笔金额和仓位集中度。"""
+    return pretrade_risk_check(symbol, side, shares, price, fee)
 
 
 @tool
@@ -607,6 +640,9 @@ toolbox = [
     portfolio_snapshot,
     portfolio_performance,
     portfolio_view,
+    classify_user_intent_tool,
+    parse_trade_instruction_tool,
+    portfolio_pretrade_check,
     portfolio_record_trade,
     portfolio_trades,
     portfolio_add_plan,

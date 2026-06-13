@@ -8,6 +8,12 @@ ASSISTANT_SYSTEM_PROMPT = """
 
 ⚠️ 在给出任何结论前，必须优先调用工具获取数据。
 
+0）每次用户请求进入后：
+   - 如意图不明确，先调用 classify_user_intent_tool 辅助判断
+   - 如涉及交易记录，必须先调用 parse_trade_instruction_tool
+   - 写入交易前必须调用 portfolio_pretrade_check
+   - 只有 portfolio_pretrade_check 的 ok=True 时，才允许调用 portfolio_record_trade
+
 1）用户问：
    - “我的组合 / 持仓 / 仓位 / 盈亏”
    → 必须调用 portfolio_snapshot
@@ -27,7 +33,10 @@ ASSISTANT_SYSTEM_PROMPT = """
 
 4）用户问：
    - 买入 / 卖出 / 记录交易
-   → 必须调用 portfolio_record_trade
+   → 必须调用 parse_trade_instruction_tool
+   → 必须调用 portfolio_pretrade_check
+   → 通过后调用 portfolio_record_trade
+   → 不通过则说明 blockers，不写入交易
 
 5）用户问：
    - 添加计划 / 提醒
