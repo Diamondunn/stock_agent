@@ -404,8 +404,53 @@ def get_stock_history(symbol: str, period: str = "3mo") -> Optional[pd.DataFrame
         或 None（如果本地没有历史）
     """
 
+    def _normalize_history_symbol(value: str) -> str:
+        s = (value or "").strip().upper()
+        if "." in s:
+            code, suffix = s.split(".", 1)
+            return f"{code.zfill(6) if code.isdigit() else code}.{'SS' if 'SS' in suffix else 'SZ' if 'SZ' in suffix else suffix}"
+        if s.isdigit():
+            s = s.zfill(6)
+            return f"{s}.SS" if s.startswith(("6", "9")) else f"{s}.SZ"
+        return s
+
+    def _period_days(value: str) -> int:
+        return {
+            "1mo": 30,
+            "3mo": 90,
+            "6mo": 180,
+            "1y": 365,
+            "2y": 730,
+            "3y": 1095,
+        }.get(value, 180)
+
+    def _read_legacy_history(value: str) -> Optional[pd.DataFrame]:
+        sym = _normalize_history_symbol(value)
+        candidates = [
+            Path("cache") / "history" / f"{sym}.parquet",
+            Path(config.DISK_CACHE_DIR) / "history" / f"{sym}.parquet",
+        ]
+        for path in candidates:
+            if not path.exists():
+                continue
+            try:
+                legacy = pd.read_parquet(path)
+                legacy = _to_ohlcv(legacy)
+                if legacy is None or legacy.empty:
+                    continue
+                cutoff = datetime.now() - timedelta(days=_period_days(period))
+                legacy = legacy[legacy.index >= cutoff].copy()
+                if not legacy.empty:
+                    logger.info(f"[history] 使用旧本地历史缓存: {path}")
+                    return legacy
+            except Exception as exc:
+                logger.warning(f"[history] 旧缓存读取失败 {path}: {exc}")
+        return None
+
     try:
         df = load_history(symbol, period=period)
+        if df is None or df.empty:
+            df = _read_legacy_history(symbol)
 
         if df is None or df.empty:
             logger.warning(f"[history] 本地历史不存在: {symbol} ({period})")

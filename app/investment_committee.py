@@ -193,7 +193,7 @@ def _build_cross_checks(votes: List[Dict[str, Any]], technical: Dict[str, Any]) 
                 "from": "coordinator",
                 "to": "technical_analyst",
                 "type": "data_gap",
-                "message": "历史行情不足，任何方向性结论都必须降级为观察。",
+                "message": "历史K线证据不足，任何方向性结论都必须降级为观察。",
                 "severity": "high",
             }
         )
@@ -256,7 +256,7 @@ def _coordinate_decision(
 
     if has_data_gap:
         action = "WATCH"
-        rationale = "关键行情证据缺失，协调员将决策降级为观察。"
+        rationale = "历史K线证据缺失，协调员将决策降级为观察。"
     elif has_risk_veto:
         action = "AVOID_OR_REDUCE"
         rationale = "风控提出硬否决，优先保护组合集中度。"
