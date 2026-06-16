@@ -42,6 +42,7 @@ from app.trade_intelligence import (
 )
 from app.trade_review import build_daily_review, build_trade_review, build_strategy_advice, save_lesson
 from app.investment_committee import build_investment_committee_decision
+from app.watchlist_cycle import build_watchlist_decisions, review_previous_watchlist_decisions
 from app.data_sources import (
     ensure_suffix,
     get_a_stock_list,
@@ -167,6 +168,18 @@ def portfolio_strategy_advice_tool() -> Dict[str, Any]:
 def portfolio_daily_review_tool(persist: bool = True) -> Dict[str, Any]:
     """生成今日交易复盘，并可自动沉淀为 DAILY_REVIEW 与 LESSON 长期记忆。"""
     return build_daily_review(persist=persist)
+
+
+@tool
+def watchlist_daily_decision_tool(persist: bool = True) -> Dict[str, Any]:
+    """对关注列表逐只给出加仓、减仓、观察、建仓候选或回避判断，并保存当日决策快照。"""
+    return build_watchlist_decisions(persist=persist)
+
+
+@tool
+def watchlist_next_day_review_tool(persist: bool = True) -> Dict[str, Any]:
+    """根据最新行情复盘上一日关注列表决策，评价命中、偏差或待补数据。"""
+    return review_previous_watchlist_decisions(persist=persist)
 
 
 @tool
@@ -678,6 +691,8 @@ toolbox = [
     portfolio_trade_review_tool,
     portfolio_strategy_advice_tool,
     portfolio_daily_review_tool,
+    watchlist_daily_decision_tool,
+    watchlist_next_day_review_tool,
     portfolio_save_lesson_tool,
     investment_committee_tool,
     portfolio_record_trade,

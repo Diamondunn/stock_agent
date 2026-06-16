@@ -205,6 +205,25 @@
         <article class="card">
           <div class="section-header">
             <div>
+              <p class="eyebrow">Watch Cycle</p>
+              <h2>关注闭环</h2>
+            </div>
+            <div class="header-actions">
+              <button type="button" class="ghost-button" onclick="reviewWatchlistDecision()">复盘上一日</button>
+              <button type="button" class="ghost-button" onclick="buildWatchlistDecision()">今日判断</button>
+            </div>
+          </div>
+          <div class="watch-cycle-panel">
+            <p class="review-status" id="watchCycleStatus">等待生成关注股判断</p>
+            <ul class="decision-list" id="watchDecisionList">
+              <li>关注列表会按加仓、减仓、观察等动作生成每日快照</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="section-header">
+            <div>
               <p class="eyebrow">Committee</p>
               <h2>投研委员会</h2>
             </div>
@@ -630,6 +649,72 @@ async function removeWatch(symbol){
     body:JSON.stringify({symbol})
   });
   refreshWatchlist();
+}
+
+function renderWatchCycleItems(items, mode){
+  const list = document.getElementById("watchDecisionList");
+  list.innerHTML = "";
+  if(!Array.isArray(items) || items.length === 0){
+    const li = document.createElement("li");
+    li.textContent = mode === "review" ? "暂无可复盘的上一日关注判断" : "关注列表为空";
+    list.appendChild(li);
+    return;
+  }
+  items.slice(0,8).forEach(item=>{
+    const li = document.createElement("li");
+    const title = document.createElement("strong");
+    const detail = document.createElement("span");
+    if(mode === "review"){
+      title.textContent = `${item.symbol || ""} · ${item.previous_action_label || item.previous_action || ""} · ${item.status || ""}`;
+      const change = item.change_pct === null || item.change_pct === undefined ? "--" : `${formatMaybeNumber(item.change_pct)}%`;
+      detail.textContent = `变化 ${change}；${item.comment || ""}`;
+    }else{
+      title.textContent = `${item.symbol || ""} · ${item.action_label || item.action || ""} · ${item.confidence || "--"}`;
+      const price = item.price === null || item.price === undefined ? "--" : item.price;
+      detail.textContent = `价格 ${price}；${item.reason || ""}`;
+    }
+    li.append(title, detail);
+    list.appendChild(li);
+  });
+}
+
+async function buildWatchlistDecision(){
+  const status = document.getElementById("watchCycleStatus");
+  status.textContent = "正在生成今日关注股判断...";
+  try{
+    const res = await fetch("/api/agent/watchlist-decisions",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({persist:true})
+    });
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error(data && data.error ? data.error : "生成失败");
+    status.textContent = data.persisted ? "今日关注判断已保存" : "今日关注判断已存在，未重复写入";
+    renderWatchCycleItems(data.items, "decision");
+  }catch(e){
+    status.textContent = "关注股判断生成失败";
+  }
+}
+
+async function reviewWatchlistDecision(){
+  const status = document.getElementById("watchCycleStatus");
+  status.textContent = "正在复盘上一日关注判断...";
+  try{
+    const res = await fetch("/api/agent/watchlist-review",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({persist:true})
+    });
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error(data && data.error ? data.error : "复盘失败");
+    const summary = data.summary || {};
+    status.textContent = data.reviewed_date
+      ? `复盘 ${data.reviewed_date}：命中 ${summary.hit || 0}，偏差 ${summary.miss || 0}，待数据 ${summary.pending || 0}`
+      : (data.note || "暂无上一日判断可复盘");
+    renderWatchCycleItems(data.items, "review");
+  }catch(e){
+    status.textContent = "上一日关注判断复盘失败";
+  }
 }
 
 async function rebuildHoldings(){

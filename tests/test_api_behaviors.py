@@ -113,6 +113,8 @@ def test_dashboard_exposes_investment_committee_panel(monkeypatch, tmp_path):
 
     assert response.status_code == 200
     assert "投研委员会" in response.text
+    assert "关注闭环" in response.text
+    assert "buildWatchlistDecision" in response.text
     assert "专家 Agent" in response.text
     assert "治理 Agent" in response.text
     assert "协同流程" in response.text
@@ -133,3 +135,15 @@ def test_daily_review_endpoint_persists_memory(monkeypatch, tmp_path):
     assert payload["persisted"] is True
     assert payload["saved_notes"]
     assert any(note["category"] == "LESSON" for note in portfolio_store.list_notes(limit=10))
+
+
+def test_watchlist_decision_endpoint(monkeypatch, tmp_path):
+    _, client = _prepare_web_app(monkeypatch, tmp_path)
+
+    response = client.post("/api/agent/watchlist-decisions", json={"persist": True})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["count"] == 2
+    assert "items" in payload

@@ -48,6 +48,7 @@ from app.agent_profile import (
 )
 from app.trade_review import build_daily_review, build_strategy_advice, build_trade_review, save_lesson
 from app.investment_committee import build_investment_committee_decision
+from app.watchlist_cycle import build_watchlist_decisions, review_previous_watchlist_decisions
 from app.dsa_bridge import get_dsa_app
 
 
@@ -467,6 +468,28 @@ async def api_agent_daily_review(data: dict | None = None):
         if isinstance(data, dict) and "persist" in data:
             persist = bool(data.get("persist"))
         return JSONResponse(build_daily_review(persist=persist))
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+
+
+@router.post("/agent/watchlist-decisions")
+async def api_agent_watchlist_decisions(data: dict | None = None):
+    try:
+        persist = True
+        if isinstance(data, dict) and "persist" in data:
+            persist = bool(data.get("persist"))
+        return JSONResponse(build_watchlist_decisions(persist=persist))
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+
+
+@router.post("/agent/watchlist-review")
+async def api_agent_watchlist_review(data: dict | None = None):
+    try:
+        persist = True
+        if isinstance(data, dict) and "persist" in data:
+            persist = bool(data.get("persist"))
+        return JSONResponse(review_previous_watchlist_decisions(persist=persist))
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)})
 

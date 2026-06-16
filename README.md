@@ -42,6 +42,9 @@ configuration practices:
   trend signals support explainable stock observations.
 - Dashboard committee panel: `/portfolio/embed` exposes the multi-role decision
   result directly in the web UI for demos.
+- Watchlist decision loop: each day the agent can save add/reduce/watch
+  decisions for every watchlist symbol, then review them against the next day's
+  price action.
 - Privacy-first publishing: real `.env`, databases, caches, logs, and deploy
   keys are excluded from GitHub sync.
 
@@ -55,6 +58,10 @@ GET /api/agent/trade-review  Historical trade review and learned lessons
 GET /api/agent/strategy-advice
                              Strategy rules derived from past trades
 POST /api/agent/daily-review Daily review with optional long-term memory write
+POST /api/agent/watchlist-decisions
+                             Save today's add/reduce/watch decisions
+POST /api/agent/watchlist-review
+                             Review previous watchlist decisions against new prices
 GET /api/agent/committee/{symbol}
                              Multi-role investment committee decision
 GET /agent/profile           Plain-text project profile
@@ -209,6 +216,17 @@ Trade ledger
 
 This is not a black-box predictive model. It is an auditable feedback loop that
 helps the assistant avoid repeating the user's historically weak behaviors.
+
+The watchlist loop is also persisted:
+
+```text
+Watchlist
+  -> daily per-symbol ADD / REDUCE / WATCH / AVOID decision
+  -> decision snapshot saved as WATCHLIST_DECISION
+  -> next-day price comparison
+  -> HIT / MISS / STABLE / PENDING_DATA review
+  -> review snapshot saved as WATCHLIST_REVIEW
+```
 
 ## What It Borrows From Popular Trading Agents
 

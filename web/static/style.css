@@ -348,6 +348,49 @@ canvas {
   font-size: 12px;
 }
 
+.watch-cycle-panel {
+  padding: 14px 16px 16px;
+  background: var(--surface-3);
+}
+
+.watch-cycle-panel .review-status {
+  padding: 0 0 12px;
+}
+
+.decision-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.decision-list li {
+  padding: 10px 11px;
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.58);
+  color: #d7e0ef;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.decision-list strong,
+.decision-list span {
+  display: block;
+}
+
+.decision-list strong {
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.decision-list span {
+  color: var(--muted);
+}
+
 .committee-panel {
   padding: 14px 16px 16px;
   background: var(--surface-3);

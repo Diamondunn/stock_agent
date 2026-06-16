@@ -38,9 +38,12 @@ ASSISTANT_SYSTEM_PROMPT = """
 
 3）用户问：
    - “关注列表 / 今日建议 / 每日建议 / 看看关注的”
+   - “关注列表每天判断 / 加仓减仓判断 / 明天复盘关注股 / 复盘昨天关注列表判断”
+   → 如用户要求今天给关注股动作，调用 watchlist_daily_decision_tool
+   → 如用户要求根据下一天行情复盘昨天判断，调用 watchlist_next_day_review_tool
    → 必须调用：
-        - get_watchlist_tool
-        - watchlist_snapshot_tool
+       - get_watchlist_tool
+       - watchlist_snapshot_tool
      然后逐只分析
     - 用户问关注列表：调用 get_watchlist_tool 或 get_watchlist
     - 用户问“分析关注股/关注股建议/每日建议”：优先调用 watchlist_analysis_tool（如只要实时价则调用 watchlist_snapshot_tool）
