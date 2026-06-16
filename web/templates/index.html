@@ -90,7 +90,10 @@
                 <p class="eyebrow">Review</p>
                 <h2>复盘学习</h2>
               </div>
-              <button type="button" class="ghost-button" onclick="loadTradeReview()">刷新</button>
+              <div class="header-actions">
+                <button type="button" class="ghost-button" onclick="persistDailyReview()">沉淀经验</button>
+                <button type="button" class="ghost-button" onclick="loadTradeReview()">刷新</button>
+              </div>
             </div>
             <div class="review-grid" id="reviewSummary">
               <div class="review-tile">
@@ -109,6 +112,7 @@
             <ul class="insight-list" id="lessonList">
               <li>复盘数据加载中</li>
             </ul>
+            <p class="review-status" id="dailyReviewStatus">今日经验尚未沉淀</p>
           </article>
         </div>
 
@@ -422,6 +426,29 @@ async function loadTradeReview(){
     const li = document.createElement("li");
     li.textContent = "复盘数据暂不可用";
     list.appendChild(li);
+  }
+}
+
+async function persistDailyReview(){
+  const status = document.getElementById("dailyReviewStatus");
+  if(status) status.textContent = "正在沉淀今日复盘...";
+  try{
+    const res = await fetch("/api/agent/daily-review",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({persist:true})
+    });
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error(data && data.error ? data.error : "沉淀失败");
+    const savedCount = Array.isArray(data.saved_notes) ? data.saved_notes.length : 0;
+    if(status){
+      status.textContent = savedCount > 0
+        ? `已沉淀 ${savedCount} 条长期记忆`
+        : "今日复盘已沉淀，无重复写入";
+    }
+    await loadTradeReview();
+  }catch(e){
+    if(status) status.textContent = "今日复盘沉淀失败";
   }
 }
 

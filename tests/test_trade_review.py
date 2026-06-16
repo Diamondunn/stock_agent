@@ -1,6 +1,6 @@
 import importlib
 
-from app.trade_review import build_strategy_advice, build_trade_review, save_lesson
+from app.trade_review import build_daily_review, build_strategy_advice, build_trade_review, save_lesson
 
 
 def _prepare_store(monkeypatch, tmp_path):
@@ -55,3 +55,19 @@ def test_save_lesson_persists_as_long_term_memory(monkeypatch, tmp_path):
     assert result["ok"] is True
     assert review["stored_lessons"][0]["category"] == "LESSON"
     assert "不补仓" in review["stored_lessons"][0]["content"]
+
+
+def test_daily_review_persists_idempotent_memory(monkeypatch, tmp_path):
+    store = _prepare_store(monkeypatch, tmp_path)
+    store.apply_trade("000001.SZ", "平安银行", "BUY", 100, 10)
+    store.apply_trade("000001.SZ", "平安银行", "SELL", 100, 8)
+
+    first = build_daily_review(persist=True)
+    second = build_daily_review(persist=True)
+    notes = store.list_notes(limit=20)
+
+    assert first["ok"] is True
+    assert any(item["category"] == "DAILY_REVIEW" for item in first["saved_notes"])
+    assert any(item["category"] == "LESSON" for item in first["saved_notes"])
+    assert second["saved_notes"] == []
+    assert sum(1 for note in notes if note["category"] == "DAILY_REVIEW") == 1

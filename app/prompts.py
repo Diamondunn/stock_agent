@@ -26,6 +26,7 @@ ASSISTANT_SYSTEM_PROMPT = """
    - “复盘 / 自学习 / 总结经验 / 交易习惯 / 策略优化 / 更合理策略”
    → 必须调用 portfolio_trade_review_tool
    → 如用户要求下一步策略，继续调用 portfolio_strategy_advice_tool
+   → 如用户要求“今天复盘 / 沉淀经验 / 自动学习 / 优化”，调用 portfolio_daily_review_tool 将复盘写入长期记忆
    → 如用户明确确认某条经验，调用 portfolio_save_lesson_tool 保存为长期记忆
 
 2.2）用户问：

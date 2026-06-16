@@ -341,6 +341,13 @@ canvas {
   color: var(--accent-2);
 }
 
+.review-status {
+  padding: 0 16px 14px;
+  background: var(--surface-3);
+  color: var(--muted-2);
+  font-size: 12px;
+}
+
 .committee-panel {
   padding: 14px 16px 16px;
   background: var(--surface-3);

@@ -46,7 +46,7 @@ from app.agent_profile import (
     build_agent_profile,
     render_agent_profile_markdown,
 )
-from app.trade_review import build_strategy_advice, build_trade_review, save_lesson
+from app.trade_review import build_daily_review, build_strategy_advice, build_trade_review, save_lesson
 from app.investment_committee import build_investment_committee_decision
 from app.dsa_bridge import get_dsa_app
 
@@ -456,6 +456,17 @@ async def api_agent_trade_review(limit: int = Query(30, ge=1, le=200)):
 async def api_agent_strategy_advice():
     try:
         return JSONResponse(build_strategy_advice())
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)})
+
+
+@router.post("/agent/daily-review")
+async def api_agent_daily_review(data: dict | None = None):
+    try:
+        persist = True
+        if isinstance(data, dict) and "persist" in data:
+            persist = bool(data.get("persist"))
+        return JSONResponse(build_daily_review(persist=persist))
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e)})
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, List, Tuple
 
 from app.portfolio_store import add_note, list_notes, list_trades
@@ -243,6 +243,67 @@ def build_strategy_advice() -> Dict[str, Any]:
         "basis": summary,
         "rules": rules,
         "lessons": review["lessons"],
+    }
+
+
+def _note_exists_for_today(category: str, marker: str, today: date) -> bool:
+    today_prefix = today.isoformat()
+    for note in list_notes(category, limit=200):
+        created_at = str(note.get("created_at") or "")
+        content = str(note.get("content") or "")
+        if created_at.startswith(today_prefix) and marker in content:
+            return True
+    return False
+
+
+def build_daily_review(persist: bool = True, today: date | None = None) -> Dict[str, Any]:
+    """
+    Build a daily review and optionally persist durable lessons.
+    The write path is idempotent per day to avoid duplicate memory entries.
+    """
+    today = today or date.today()
+    review = build_trade_review(limit=10)
+    advice = build_strategy_advice()
+    summary = review["summary"]
+    marker = f"[daily-review:{today.isoformat()}]"
+    saved_notes: List[Dict[str, Any]] = []
+
+    headline = (
+        f"{marker} 闭合交易 {summary['closed_trades']} 笔，胜率 {summary['win_rate']}%，"
+        f"总收益 {summary['total_pnl']}，平均持仓 {summary['avg_holding_days']} 天。"
+    )
+    generated_lessons = review.get("lessons", [])
+    action_items = [
+        "继续为每笔交易记录买入理由、失效条件和卖出理由。",
+        "交易前运行 portfolio_pretrade_check，避免超额卖出和仓位过度集中。",
+    ]
+    for lesson in generated_lessons[:3]:
+        text = str(lesson.get("lesson") or "").strip()
+        if text and text not in action_items:
+            action_items.append(text)
+
+    if persist:
+        if not _note_exists_for_today("DAILY_REVIEW", marker, today):
+            add_note("DAILY_REVIEW", headline)
+            saved_notes.append({"category": "DAILY_REVIEW", "content": headline})
+
+        for item in action_items[:4]:
+            lesson_text = f"{marker} {item}"
+            if not _note_exists_for_today("LESSON", lesson_text, today):
+                add_note("LESSON", lesson_text)
+                saved_notes.append({"category": "LESSON", "content": lesson_text})
+
+    return {
+        "ok": True,
+        "asof": datetime.now().isoformat(timespec="seconds"),
+        "date": today.isoformat(),
+        "persisted": bool(persist),
+        "summary": summary,
+        "headline": headline,
+        "action_items": action_items,
+        "strategy_rules": advice.get("rules", []),
+        "saved_notes": saved_notes,
+        "stored_lessons": list_notes("LESSON", limit=20),
     }
 
 

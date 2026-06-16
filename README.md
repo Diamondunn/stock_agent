@@ -54,6 +54,7 @@ GET /api/agent/demo-prompts  Suggested questions for live demos
 GET /api/agent/trade-review  Historical trade review and learned lessons
 GET /api/agent/strategy-advice
                              Strategy rules derived from past trades
+POST /api/agent/daily-review Daily review with optional long-term memory write
 GET /api/agent/committee/{symbol}
                              Multi-role investment committee decision
 GET /agent/profile           Plain-text project profile

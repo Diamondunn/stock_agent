@@ -117,3 +117,19 @@ def test_dashboard_exposes_investment_committee_panel(monkeypatch, tmp_path):
     assert "治理 Agent" in response.text
     assert "协同流程" in response.text
     assert "loadCommitteeDecision" in response.text
+
+
+def test_daily_review_endpoint_persists_memory(monkeypatch, tmp_path):
+    web_main, client = _prepare_web_app(monkeypatch, tmp_path)
+    portfolio_store = importlib.import_module("app.portfolio_store")
+    portfolio_store.apply_trade("000001.SZ", "平安银行", "BUY", 100, 10)
+    portfolio_store.apply_trade("000001.SZ", "平安银行", "SELL", 100, 8)
+
+    response = client.post("/api/agent/daily-review", json={"persist": True})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["persisted"] is True
+    assert payload["saved_notes"]
+    assert any(note["category"] == "LESSON" for note in portfolio_store.list_notes(limit=10))

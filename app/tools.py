@@ -40,7 +40,7 @@ from app.trade_intelligence import (
     parse_trade_instruction,
     pretrade_risk_check,
 )
-from app.trade_review import build_trade_review, build_strategy_advice, save_lesson
+from app.trade_review import build_daily_review, build_trade_review, build_strategy_advice, save_lesson
 from app.investment_committee import build_investment_committee_decision
 from app.data_sources import (
     ensure_suffix,
@@ -161,6 +161,12 @@ def portfolio_trade_review_tool(limit: int = 30) -> Dict[str, Any]:
 def portfolio_strategy_advice_tool() -> Dict[str, Any]:
     """基于历史交易复盘结果生成下一阶段可执行策略规则。"""
     return build_strategy_advice()
+
+
+@tool
+def portfolio_daily_review_tool(persist: bool = True) -> Dict[str, Any]:
+    """生成今日交易复盘，并可自动沉淀为 DAILY_REVIEW 与 LESSON 长期记忆。"""
+    return build_daily_review(persist=persist)
 
 
 @tool
@@ -671,6 +677,7 @@ toolbox = [
     portfolio_pretrade_check,
     portfolio_trade_review_tool,
     portfolio_strategy_advice_tool,
+    portfolio_daily_review_tool,
     portfolio_save_lesson_tool,
     investment_committee_tool,
     portfolio_record_trade,
