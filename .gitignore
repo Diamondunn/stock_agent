@@ -17,6 +17,7 @@ logs/
 cache/
 data/*.db
 data/history/
+data/finetune/
 portfolio.db
 *.sqlite
 *.sqlite3

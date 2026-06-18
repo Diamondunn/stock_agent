@@ -268,7 +268,7 @@ def _coordinate_decision(
         rationale = "综合评分偏负，暂不支持新增风险暴露。"
     else:
         action = "WATCH"
-        rationale = "专家意见未形成足够一致性，保持观察更合理。"
+        rationale = _watch_rationale(total_score, votes)
 
     return {
         "role": "coordinator",
@@ -277,6 +277,36 @@ def _coordinate_decision(
         "rationale": rationale,
         "constraints_applied": [c["type"] for c in cross_checks if c.get("severity") in {"high", "medium"}],
     }
+
+
+def _watch_rationale(total_score: int, votes: List[Dict[str, Any]]) -> str:
+    role_names = {
+        "technical_analyst": "技术面",
+        "risk_manager": "风控",
+        "memory_reviewer": "交易记忆",
+    }
+    supportive = []
+    cautious = []
+    neutral = []
+    for vote in votes:
+        role = role_names.get(str(vote.get("role")), str(vote.get("role") or "未知角色"))
+        score = int(vote.get("score", 0))
+        if score > 0:
+            supportive.append(f"{role}+{score}")
+        elif score < 0:
+            cautious.append(f"{role}{score}")
+        else:
+            neutral.append(role)
+
+    parts = [f"综合评分 {total_score} 未达到买入候选阈值 3，也没有触发强减仓阈值 -3。"]
+    if supportive:
+        parts.append(f"支持项：{'、'.join(supportive)}。")
+    if cautious:
+        parts.append(f"压制项：{'、'.join(cautious)}。")
+    if neutral:
+        parts.append(f"未确认项：{'、'.join(neutral)}。")
+    parts.append("结论为观察：等待趋势、仓位压力或交易记忆至少两项同向后，再升级为加仓/减仓动作。")
+    return "".join(parts)
 
 
 def _critic_review(coordinator: Dict[str, Any], technical: Dict[str, Any], votes: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -396,4 +426,12 @@ def _next_steps(action: str, has_position: bool) -> List[str]:
         if has_position:
             return ["复核持仓理由是否仍成立。", "若趋势和交易记忆同时偏弱，考虑降仓或设置更紧的止损。"]
         return ["暂不加入买入候选，等待趋势、风险或交易记忆改善。"]
-    return ["保持观察，等待技术面、风险面或交易记忆给出更一致信号。"]
+    steps = [
+        "补齐最近 6 个月 K 线、实时价格和交易记忆后再复核。",
+        "只有技术面、风控、交易记忆至少两项同向，才升级为加仓/减仓候选。",
+    ]
+    if has_position:
+        steps.append("持仓期间先用止损线或仓位上限控制风险，不把观察结论直接当作加仓信号。")
+    else:
+        steps.append("未持仓时先放入观察池，等待明确触发条件而不是追随单一指标。")
+    return steps

@@ -255,6 +255,48 @@ Evidence collection
 The committee is deterministic and testable. It provides decision evidence, not
 automatic order execution.
 
+## Model Adaptation And Fine-Tuning
+
+Fine-tuning should be the last step, not the first step. In this project the
+best target is not "predict tomorrow's price" but "learn the assistant's
+decision discipline":
+
+- never invent missing market data;
+- explain technical, risk, and trade-memory evidence separately;
+- downgrade to WATCH when evidence is incomplete;
+- turn next-day reviews into stricter future trigger conditions;
+- keep trade execution behind pre-trade guardrails.
+
+The recommended loop is:
+
+```text
+WATCHLIST_DECISION notes
+  + WATCHLIST_REVIEW notes
+  -> provider-neutral chat JSONL
+  -> offline evaluation
+  -> optional model fine-tuning or prompt/distillation update
+```
+
+Export local fine-tuning candidates:
+
+```bash
+python scripts/export_finetune_dataset.py \
+  --output data/finetune/watchlist_decisions.jsonl
+```
+
+The generated `data/finetune/` directory is ignored by Git because it may
+contain personal watchlist, trading-behavior, and review data. Inspect and
+redact the JSONL before uploading it to any model provider.
+
+Use the exported records for:
+
+- supervised fine-tuning of response style and decision discipline;
+- regression evaluation before changing prompts or tools;
+- small-model distillation for local demos.
+
+Do not use these records as an autonomous trading model. They are labels for
+explainable decision behavior, not guaranteed market predictions.
+
 ## Tests
 
 Run the fast root tests:

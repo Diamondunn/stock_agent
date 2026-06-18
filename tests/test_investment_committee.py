@@ -27,6 +27,21 @@ def _bullish_technical():
     }
 
 
+def _mixed_technical():
+    return {
+        "ok": True,
+        "history_ok": True,
+        "price": 10,
+        "ma20": 10,
+        "ma50": 10,
+        "rsi": 55,
+        "macd": 0.2,
+        "macd_signal": 0.1,
+        "max_drawdown": -0.04,
+        "bars": 80,
+    }
+
+
 def test_committee_outputs_buy_candidate_for_aligned_positive_signals(monkeypatch, tmp_path):
     _prepare_store(monkeypatch, tmp_path)
 
@@ -78,3 +93,16 @@ def test_committee_uses_negative_trade_memory(monkeypatch, tmp_path):
     assert memory_vote["score"] < 0
     assert any("贡献为负" in item for item in memory_vote["evidence"])
     assert any(check["from"] == "memory_reviewer" for check in decision["cross_checks"])
+
+
+def test_committee_watch_rationale_explains_missing_alignment(monkeypatch, tmp_path):
+    _prepare_store(monkeypatch, tmp_path)
+
+    decision = build_investment_committee_decision("600519", technical_override=_mixed_technical())
+    rationale = decision["coordinator"]["rationale"]
+
+    assert decision["action"] == "WATCH"
+    assert "综合评分" in rationale
+    assert "买入候选阈值 3" in rationale
+    assert "未确认项" in rationale
+    assert "至少两项同向" in rationale
